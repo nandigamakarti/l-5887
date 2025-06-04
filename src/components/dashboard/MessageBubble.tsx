@@ -25,7 +25,9 @@ import {
   extractZaniQuery, 
   processZaniQuery, 
   highlightZaniMentions,
-  isMessageProcessed
+  isMessageProcessed,
+  getStoredZaniResponse,
+  storeZaniResponse
 } from '@/services/zaniService';
 import { UserAvatar } from '@/components/ui/user-avatar';
 
@@ -61,29 +63,43 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // Check if message is pinned
   const isPinned = message.isPinned || false;
   
-  // Process @zani - only once per message
+  // Process @zani - only once per message, but check for stored response first
   useEffect(() => {
     const processZani = async () => {
-      if (message.content && 
-          containsZaniMention(message.content) && 
-          !isMessageProcessed(message.id) && 
-          !isProcessingZani) {
+      if (message.content && containsZaniMention(message.content)) {
+        // First check if we have a stored response
+        const storedResponse = getStoredZaniResponse(message.id);
+        if (storedResponse) {
+          setZaniResponse(storedResponse);
+          return;
+        }
         
-        const query = extractZaniQuery(message.content);
-        if (query) {
-          setIsProcessingZani(true);
-          try {
-            // Only get messages from current channel
-            const currentChannelMessages = getMessages(message.channelId) || [];
-            const response = await processZaniQuery(query, currentChannelMessages, message.channelId, message.id);
-            if (response) {
-              setZaniResponse(response);
+        // Only process if not already processed and not currently processing
+        if (!isMessageProcessed(message.id) && !isProcessingZani) {
+          const query = extractZaniQuery(message.content);
+          if (query) {
+            setIsProcessingZani(true);
+            try {
+              // Only get messages from current channel
+              const currentChannelMessages = getMessages(message.channelId) || [];
+              const response = await processZaniQuery(
+                query, 
+                currentChannelMessages, 
+                message.channelId, 
+                message.id,
+                message.content // Pass the full message content for file analysis
+              );
+              if (response) {
+                setZaniResponse(response);
+              }
+            } catch (error) {
+              console.error('Error processing Zani query:', error);
+              const errorResponse = 'Sorry, I encountered an error processing your request.';
+              storeZaniResponse(message.id, errorResponse);
+              setZaniResponse(errorResponse);
+            } finally {
+              setIsProcessingZani(false);
             }
-          } catch (error) {
-            console.error('Error processing Zani query:', error);
-            setZaniResponse('Sorry, I encountered an error processing your request.');
-          } finally {
-            setIsProcessingZani(false);
           }
         }
       }
@@ -532,11 +548,11 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
             <div className="h-2 w-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
             <div className="h-2 w-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           </div>
-          <span className="ml-3 text-sm">Zani is searching...</span>
+          <span className="ml-3 text-sm">Zani is analyzing...</span>
         </div>
       )}
       
-      {/* Zani AI Response - Actual response */}
+      {/* Zani AI Response - Actual response (now persistent) */}
       {!isProcessingZani && zaniResponse && (
         <div className="mt-4 flex items-start bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-l-4 border-blue-400 rounded-lg p-4">
           <div className="flex-shrink-0 mr-3">

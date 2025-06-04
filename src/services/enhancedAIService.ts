@@ -1,9 +1,11 @@
-
-import axios from 'axios';
 import { Message } from '@/contexts/MessageContext';
 
-const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY || '';
-const OPENAI_API_URL = 'https://api.openai.com/v1/chat/completions';
+export interface WorkspaceData {
+  channels: { [channelId: string]: Message[] };
+  channelNames: { [channelId: string]: string };
+  pinnedDocs: any[];
+  currentWorkspaceId: string;
+}
 
 export interface AIMessage {
   id: string;
@@ -13,248 +15,133 @@ export interface AIMessage {
   isDeepSearch?: boolean;
 }
 
-export interface WorkspaceData {
-  channels: { [channelId: string]: Message[] };
-  channelNames: { [channelId: string]: string };
-  pinnedDocs?: { title: string; content: string; type?: string; isPinned?: boolean }[];
-  currentWorkspaceId: string;
-}
-
-/**
- * Enhanced AI service that handles both regular and deep search queries
- */
 export class EnhancedAIService {
-  /**
-   * Process a regular AI query with access to workspace data only
-   */
   static async processRegularQuery(
     query: string,
     workspaceData: WorkspaceData
   ): Promise<string> {
     try {
-      const { channels, channelNames, pinnedDocs, currentWorkspaceId } = workspaceData;
-      
-      // Filter out private channels for regular queries
-      const publicChannelsContext = this.buildPublicChannelsContext(channels, channelNames);
-      const pinnedDocsContext = this.buildPinnedDocsContext(pinnedDocs);
-      
-      const prompt = `
-You are an AI assistant for workspace "${currentWorkspaceId}". You have access to all public channels and pinned documents within this specific workspace only.
+      let context = `Workspace: ${workspaceData.currentWorkspaceId}\n\n`;
 
-WORKSPACE CONTEXT:
-${publicChannelsContext}
+      if (workspaceData.channels && Object.keys(workspaceData.channels).length > 0) {
+        context += "Channel Messages:\n";
+        Object.entries(workspaceData.channels).forEach(([channelId, messages]) => {
+          const channelName = workspaceData.channelNames[channelId] || channelId;
+          context += `#${channelName}:\n`;
+          messages.slice(-5).forEach(msg => {
+            context += `- ${msg.username}: ${msg.content}\n`;
+          });
+        });
+        context += "\n";
+      }
 
-PINNED DOCUMENTS AND IMAGES:
-${pinnedDocsContext}
+      if (workspaceData.pinnedDocs && workspaceData.pinnedDocs.length > 0) {
+        context += "Pinned Documents:\n";
+        workspaceData.pinnedDocs.forEach(doc => {
+          context += `- ${doc.title}\n`;
+        });
+        context += "\n";
+      }
 
-USER QUERY: "${query}"
-
-INSTRUCTIONS:
-- Provide helpful, accurate responses based ONLY on the workspace data above
-- If asked about specific channels, reference the actual content from those channels
-- If asked about documents or images, analyze the pinned content provided above
-- If you don't have enough information from the workspace, acknowledge this limitation
-- Be conversational and friendly
-- Focus only on information from the current workspace
-- Do not make up information that isn't in the provided context
-- If analyzing images or documents, provide detailed insights based on their content
-`;
-
-      const response = await axios.post(
-        OPENAI_API_URL,
-        {
-          model: 'gpt-4o',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 1000,
-          temperature: 0.7,
+      const response = await fetch('/api/openai-enhanced', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          },
-        }
-      );
+        body: JSON.stringify({
+          message: query,
+          context: context,
+          mode: 'regular'
+        }),
+      });
 
-      return response.data.choices[0].message.content.trim();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.response || 'I am unable to process your request at this time.';
     } catch (error) {
-      console.error('Error processing regular AI query:', error);
-      return this.handleError(error);
+      console.error('Enhanced AI Regular Error:', error);
+      return 'I am unable to process your request at this time.';
     }
   }
 
-  /**
-   * Process a deep search query with web search capabilities
-   */
   static async processDeepSearchQuery(
     query: string,
     workspaceData: WorkspaceData
   ): Promise<string> {
     try {
-      const { channels, channelNames, pinnedDocs, currentWorkspaceId } = workspaceData;
+      // Build comprehensive context including pinned documents
+      let context = `Workspace: ${workspaceData.currentWorkspaceId}\n\n`;
       
-      // Get workspace context
-      const publicChannelsContext = this.buildPublicChannelsContext(channels, channelNames);
-      const pinnedDocsContext = this.buildPinnedDocsContext(pinnedDocs);
-      
-      // Simulate web search (in a real implementation, you'd use a web search API)
-      const webSearchResults = await this.performWebSearch(query);
-      
-      const prompt = `
-You are an AI assistant with Deep Search capabilities for workspace "${currentWorkspaceId}". You have access to:
-1. All public channels and pinned documents from the current workspace
-2. Web search results for additional context
+      // Add channel information
+      if (workspaceData.channels && Object.keys(workspaceData.channels).length > 0) {
+        context += "Channel Messages:\n";
+        Object.entries(workspaceData.channels).forEach(([channelId, messages]) => {
+          const channelName = workspaceData.channelNames[channelId] || channelId;
+          context += `#${channelName}:\n`;
+          messages.slice(-5).forEach(msg => {
+            context += `- ${msg.username}: ${msg.content}\n`;
+          });
+        });
+        context += "\n";
+      }
 
-WORKSPACE CONTEXT:
-${publicChannelsContext}
+      // Add pinned documents with enhanced analysis
+      if (workspaceData.pinnedDocs && workspaceData.pinnedDocs.length > 0) {
+        context += "Available Pinned Documents and Images:\n";
+        workspaceData.pinnedDocs.forEach(doc => {
+          context += `- ${doc.title} (${doc.type || 'document'})`;
+          if (doc.type?.startsWith('image/')) {
+            context += ` - Image file that can be analyzed for visual content, text, charts, diagrams, etc.`;
+          } else {
+            context += ` - Document file containing text and information that can be analyzed`;
+          }
+          context += `\n`;
+        });
+        context += "\n";
+      }
 
-PINNED DOCUMENTS AND IMAGES:
-${pinnedDocsContext}
+      // Enhanced query processing for files
+      const hasFileQuery = query.toLowerCase().includes('image') || 
+                          query.toLowerCase().includes('document') || 
+                          query.toLowerCase().includes('file') ||
+                          query.toLowerCase().includes('analyze') ||
+                          query.toLowerCase().includes('what does') ||
+                          query.toLowerCase().includes('show me');
 
-WEB SEARCH RESULTS:
-${webSearchResults}
+      if (hasFileQuery && workspaceData.pinnedDocs && workspaceData.pinnedDocs.length > 0) {
+        context += `User is asking about files/images. Available pinned content: ${workspaceData.pinnedDocs.map(doc => doc.title).join(', ')}\n\n`;
+      }
 
-USER QUERY: "${query}"
-
-INSTRUCTIONS:
-- First check if the workspace data can answer the question
-- If workspace data is insufficient, use web search results to provide additional context
-- Clearly indicate when information comes from external sources vs workspace
-- Provide comprehensive, accurate answers combining both sources when relevant
-- Be conversational and helpful
-- Focus on the current workspace context when possible
-- If analyzing pinned documents or images, provide detailed insights
-`;
-
-      const response = await axios.post(
-        OPENAI_API_URL,
-        {
-          model: 'gpt-4o',
-          messages: [{ role: 'user', content: prompt }],
-          max_tokens: 1200,
-          temperature: 0.7,
+      const response = await fetch('/api/openai-enhanced', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-          },
-        }
-      );
+        body: JSON.stringify({
+          message: query,
+          context: context,
+          mode: 'deep_search'
+        }),
+      });
 
-      return response.data.choices[0].message.content.trim();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return data.response || 'I apologize, but I encountered an issue processing your request with deep search.';
     } catch (error) {
-      console.error('Error processing deep search query:', error);
-      return this.handleError(error);
-    }
-  }
-
-  /**
-   * Build context from public channels only
-   */
-  private static buildPublicChannelsContext(
-    channels: { [channelId: string]: Message[] },
-    channelNames: { [channelId: string]: string }
-  ): string {
-    let context = '';
-    
-    Object.entries(channels).forEach(([channelId, messages]) => {
-      // Skip private channels (you can add logic to detect private channels)
-      const channelName = channelNames[channelId] || channelId;
-      if (channelName.includes('private') || channelId.includes('private')) {
-        return;
+      console.error('Enhanced AI Deep Search Error:', error);
+      
+      // Fallback response with file awareness
+      if (workspaceData.pinnedDocs && workspaceData.pinnedDocs.length > 0) {
+        return `I can help you with information from your workspace and the ${workspaceData.pinnedDocs.length} pinned document(s): ${workspaceData.pinnedDocs.map(doc => doc.title).join(', ')}. However, I'm currently experiencing connection issues with deep search. Could you rephrase your question or ask about specific content from your pinned documents?`;
       }
       
-      if (!messages || !Array.isArray(messages) || messages.length === 0) return;
-      
-      const validMessages = messages.filter(msg => 
-        msg && typeof msg === 'object' && msg.username && msg.content
-      );
-      
-      if (validMessages.length === 0) return;
-      
-      const recentMessages = validMessages
-        .slice(-10) // Get last 10 messages for context
-        .map(msg => `${msg.username}: ${msg.content}`)
-        .join('\n');
-      
-      context += `\n--- Channel: #${channelName} ---\n${recentMessages}\n`;
-    });
-    
-    return context || 'No public channel data available.';
-  }
-
-  /**
-   * Build context from pinned documents only
-   */
-  private static buildPinnedDocsContext(
-    pinnedDocs?: { title: string; content: string; type?: string; isPinned?: boolean }[]
-  ): string {
-    if (!pinnedDocs || pinnedDocs.length === 0) {
-      return 'No pinned documents available.';
+      return 'I apologize, but I encountered an issue with deep search. Please try again or use regular mode for workspace-only queries.';
     }
-    
-    const onlyPinnedDocs = pinnedDocs.filter(doc => doc.isPinned === true);
-    
-    if (onlyPinnedDocs.length === 0) {
-      return 'No pinned documents available.';
-    }
-    
-    let context = '\n--- Pinned Documents ---\n';
-    onlyPinnedDocs.forEach(doc => {
-      const docType = doc.type?.startsWith('image/') ? 'IMAGE' : 'DOCUMENT';
-      context += `${docType}: ${doc.title}\nContent: ${doc.content}\n\n`;
-    });
-    
-    return context;
-  }
-
-  /**
-   * Simulate web search (replace with actual web search API)
-   */
-  private static async performWebSearch(query: string): Promise<string> {
-    // This is a simulation. In a real implementation, you'd use:
-    // - Google Search API
-    // - Bing Search API
-    // - DuckDuckGo API
-    // - Perplexity API
-    // - Serper API
-    
-    const webResults = `
-Based on web search for "${query}":
-
-Example web search results would appear here. This could include:
-- Recent news articles
-- Wikipedia entries
-- Documentation
-- Company information
-- Technical specifications
-
-Note: This is a simulated web search. To implement real web search, integrate with:
-- Google Custom Search API
-- Bing Web Search API
-- Perplexity API for real-time web data
-`;
-    
-    return webResults;
-  }
-
-  /**
-   * Handle API errors gracefully
-   */
-  private static handleError(error: any): string {
-    if (!OPENAI_API_KEY) {
-      return "I'm sorry, the AI service is not configured properly. Please check the API key configuration.";
-    }
-    
-    if (axios.isAxiosError(error)) {
-      if (error.response?.status === 401) {
-        return "I'm sorry, there's an authentication issue with the AI service. Please check your API key.";
-      } else if (error.response?.status === 429) {
-        return "I'm sorry, we've hit the rate limit for AI requests. Please try again later.";
-      }
-    }
-    
-    return "I'm sorry, I encountered an error processing your request. Please try again later.";
   }
 }

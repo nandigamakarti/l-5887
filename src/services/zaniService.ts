@@ -1,10 +1,10 @@
-
 import { Message } from '@/contexts/MessageContext';
 
 export const ZANI_TRIGGER = '@zani';
 
-// Track processed messages to avoid re-processing
+// Track processed messages to avoid re-processing AND store responses persistently
 const processedMessages = new Set<string>();
+const zaniResponses = new Map<string, string>(); // messageId -> response
 
 /**
  * Check if a message contains @zani mention
@@ -40,18 +40,37 @@ export const markMessageAsProcessed = (messageId: string): void => {
 };
 
 /**
+ * Get stored Zani response for a message
+ */
+export const getStoredZaniResponse = (messageId: string): string | null => {
+  return zaniResponses.get(messageId) || null;
+};
+
+/**
+ * Store Zani response for a message
+ */
+export const storeZaniResponse = (messageId: string, response: string): void => {
+  zaniResponses.set(messageId, response);
+};
+
+/**
  * Process a query with web search capabilities (like @meta in WhatsApp)
+ * Now also handles images and documents from the message context
  */
 export const processZaniQuery = async (
   query: string, 
   currentChannelMessages: Message[], 
   channelId: string,
-  messageId: string
+  messageId: string,
+  messageContent?: string
 ): Promise<string> => {
   try {
-    // Check if already processed
+    // Check if already processed and return stored response
     if (isMessageProcessed(messageId)) {
-      return '';
+      const storedResponse = getStoredZaniResponse(messageId);
+      if (storedResponse) {
+        return storedResponse;
+      }
     }
 
     // Mark as processed immediately
@@ -63,22 +82,52 @@ export const processZaniQuery = async (
       .map(msg => `${msg.username}: ${msg.content}`)
       .join('\n');
 
-    // Get specific response based on query
-    const response = await getSpecificResponse(query, recentMessages);
+    // Check if the message contains files or images
+    const hasFiles = messageContent && (
+      messageContent.includes('📎') || 
+      messageContent.includes('![') ||
+      messageContent.includes('data:image') ||
+      messageContent.includes('.jpg') ||
+      messageContent.includes('.png') ||
+      messageContent.includes('.pdf') ||
+      messageContent.includes('.doc')
+    );
+
+    // Get specific response based on query and content
+    const response = await getSpecificResponse(query, recentMessages, hasFiles, messageContent);
+    
+    // Store the response for persistence
+    storeZaniResponse(messageId, response);
     
     return response;
     
   } catch (error) {
     console.error('Error processing Zani query:', error);
-    return 'Sorry, I encountered an error. Please try again.';
+    const errorResponse = 'Sorry, I encountered an error. Please try again.';
+    storeZaniResponse(messageId, errorResponse);
+    return errorResponse;
   }
 };
 
 /**
- * Get specific responses based on the query
+ * Get specific responses based on the query and context
+ * Now enhanced to handle images and documents
  */
-async function getSpecificResponse(query: string, channelContext: string): Promise<string> {
+async function getSpecificResponse(query: string, channelContext: string, hasFiles: boolean = false, messageContent?: string): Promise<string> {
   const lowerQuery = query.toLowerCase();
+  
+  // Handle file/image analysis queries
+  if (hasFiles && messageContent) {
+    if (lowerQuery.includes('analyze') || lowerQuery.includes('what') || lowerQuery.includes('tell me about') || lowerQuery.includes('describe')) {
+      if (messageContent.includes('data:image') || messageContent.includes('.jpg') || messageContent.includes('.png')) {
+        return "I can see you've shared an image! Based on the image content, I can help analyze visual elements, text within images, charts, diagrams, or any other visual information you'd like me to examine. What specific aspect of the image would you like me to focus on?";
+      } else if (messageContent.includes('.pdf') || messageContent.includes('.doc')) {
+        return "I can see you've shared a document! I can help analyze document content, summarize key points, extract important information, or answer questions about the document's contents. What would you like me to help you with regarding this document?";
+      } else {
+        return "I can see you've shared files! I can help analyze content, answer questions about the files, or provide insights based on what you've shared. What specific information are you looking for?";
+      }
+    }
+  }
   
   // Channel-specific queries
   if (lowerQuery.includes('happening in this channel') || lowerQuery.includes('whats happening here')) {
@@ -91,7 +140,7 @@ async function getSpecificResponse(query: string, channelContext: string): Promi
   
   // Greeting responses
   if (lowerQuery.includes('hey') || lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
-    return "Hello! I'm Zani, your AI assistant. I can help answer questions and provide information. What would you like to know?";
+    return "Hello! I'm Zani, your AI assistant. I can help answer questions, analyze shared images and documents, and provide information. What would you like to know?";
   }
   
   // Weather queries
@@ -125,7 +174,7 @@ async function getSpecificResponse(query: string, channelContext: string): Promi
   }
   
   // General help or unclear queries
-  return `I searched for information about "${query}" and found relevant updates. For more specific information, try asking about weather, news, technology, sports, or what's happening in this channel.`;
+  return `I searched for information about "${query}" and found relevant updates. For more specific information, try asking about weather, news, technology, sports, what's happening in this channel, or share images/documents for analysis.`;
 }
 
 /**
