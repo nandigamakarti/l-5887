@@ -1,6 +1,7 @@
+
 import React from 'react';
 import { ToneAnalysis } from '@/services/toneAnalyzer';
-import { AlertTriangle, AlertCircle, CheckCircle, HelpCircle, Zap, Loader2, ThumbsUp, Info } from 'lucide-react';
+import { AlertTriangle, AlertCircle, CheckCircle, HelpCircle, Zap, Loader2, ThumbsUp, Info, Sparkles, Target, MessageCircle } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { motion } from 'framer-motion';
 import { Progress } from '@/components/ui/progress';
@@ -16,13 +17,22 @@ const ToneImpactMeter: React.FC<ToneImpactMeterProps> = ({ analysis, isLoading =
   if (isLoading) {
     return (
       <motion.div 
-        initial={{ opacity: 0.7, y: 5 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.3 }}
-        className="flex items-center justify-center text-sm text-gray-300 px-4 py-2 rounded-lg bg-gray-800/90 backdrop-blur-sm shadow-lg mx-1 border border-gray-700/50"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4, type: 'spring', stiffness: 300 }}
+        className="relative overflow-hidden bg-gradient-to-br from-indigo-900/30 via-purple-900/30 to-pink-900/30 backdrop-blur-lg border border-indigo-500/20 rounded-2xl shadow-2xl mx-1 p-4"
       >
-        <Loader2 className="w-4 h-4 text-purple-400 animate-spin mr-2" />
-        <span className="text-xs font-medium">Analyzing your message...</span>
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-600/10 via-purple-600/10 to-pink-600/10 animate-pulse" />
+        <div className="relative flex items-center justify-center space-x-3">
+          <div className="relative">
+            <Loader2 className="w-6 h-6 text-purple-400 animate-spin" />
+            <div className="absolute inset-0 w-6 h-6 border-2 border-purple-400/30 rounded-full animate-ping" />
+          </div>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-white/90">AI Analyzing Your Message</span>
+            <span className="text-xs text-purple-300/80">Detecting tone and impact...</span>
+          </div>
+        </div>
       </motion.div>
     );
   }
@@ -31,212 +41,189 @@ const ToneImpactMeter: React.FC<ToneImpactMeterProps> = ({ analysis, isLoading =
     return null;
   }
   
-  // Get tone icon and color
-  const getToneIcon = () => {
-    switch (analysis.tone) {
-      case 'aggressive':
-        return <AlertTriangle className="w-6 h-6 text-red-500" />;
-      case 'weak':
-        return <AlertCircle className="w-6 h-6 text-yellow-500" />;
-      case 'confusing':
-        return <HelpCircle className="w-6 h-6 text-orange-500" />;
-      case 'clear':
-        return <CheckCircle className="w-6 h-6 text-green-500" />;
-      case 'neutral':
-      default:
-        return <AlertCircle className="w-6 h-6 text-blue-500" />;
-    }
-  };
-
-  // Get impact icon and color
-  const getImpactIcon = () => {
-    switch (analysis.impact) {
-      case 'high':
-        return <Zap className="w-6 h-6 text-purple-500" />;
-      case 'medium':
-        return <Zap className="w-6 h-6 text-blue-500" />;
-      case 'low':
-      default:
-        return <Zap className="w-6 h-6 text-gray-500" />;
-    }
-  };
-  
-  // Get tone color class
-  const getToneColorClass = () => {
-    switch (analysis.tone) {
-      case 'aggressive': return 'text-red-500 border-red-500 bg-red-500/10';
-      case 'weak': return 'text-yellow-500 border-yellow-500 bg-yellow-500/10';
-      case 'confusing': return 'text-orange-500 border-orange-500 bg-orange-500/10';
-      case 'clear': return 'text-green-500 border-green-500 bg-green-500/10';
-      case 'neutral':
-      default: return 'text-blue-500 border-blue-500 bg-blue-500/10';
-    }
-  };
-  
-  // Get impact color class
-  const getImpactColorClass = () => {
-    switch (analysis.impact) {
-      case 'high': return 'text-purple-500 border-purple-500 bg-purple-500/10';
-      case 'medium': return 'text-blue-500 border-blue-500 bg-blue-500/10';
-      case 'low':
-      default: return 'text-gray-500 border-gray-500 bg-gray-500/10';
-    }
-  };
-
-  // Get tone description
-  const getToneDescription = () => {
-    switch (analysis.tone) {
-      case 'aggressive': return 'Your message has an aggressive tone.';
-      case 'weak': return 'Your message has a weak tone.';
-      case 'confusing': return 'Your message has a confusing tone.';
-      case 'clear': return 'Your message has a clear tone.';
-      case 'neutral':
-      default: return 'Your message has a neutral tone.';
-    }
-  };
-
-  // Get impact description
-  const getImpactDescription = () => {
-    switch (analysis.impact) {
-      case 'high': return 'Your message has a high impact.';
-      case 'medium': return 'Your message has a medium impact.';
-      case 'low':
-      default: return 'Your message has a low impact.';
-    }
-  };
-
   // Calculate the effectiveness score as a percentage
   const effectivenessPercentage = Math.min(Math.max((analysis.score / 10) * 100, 0), 100);
 
-  // Get emoji for tone
-  const getToneEmoji = () => {
-    switch (analysis.tone) {
-      case 'aggressive': return '😠';
-      case 'weak': return '😟';
-      case 'confusing': return '🤔';
-      case 'clear': return '😊';
-      case 'neutral': return '😐';
-      default: return '😐';
-    }
-  };
-
-  // Get emoji for impact
-  const getImpactEmoji = () => {
-    switch (analysis.impact) {
-      case 'high': return '💥';
-      case 'medium': return '✨';
-      case 'low': return '💤';
-      default: return '✨';
-    }
-  };
-
   // Get tone color based on analysis
-  const getToneColor = () => {
+  const getToneGradient = () => {
     switch (analysis.tone) {
-      case 'aggressive': return 'from-red-600 to-red-500';
-      case 'weak': return 'from-yellow-600 to-yellow-500';
-      case 'confusing': return 'from-orange-600 to-orange-500';
-      case 'clear': return 'from-emerald-600 to-emerald-500';
-      case 'neutral': default: return 'from-blue-600 to-blue-500';
+      case 'aggressive': return 'from-red-500 via-red-400 to-orange-500';
+      case 'weak': return 'from-yellow-500 via-amber-400 to-orange-500';
+      case 'confusing': return 'from-orange-500 via-yellow-400 to-amber-500';
+      case 'clear': return 'from-emerald-500 via-green-400 to-teal-500';
+      case 'neutral': default: return 'from-blue-500 via-indigo-400 to-purple-500';
     }
   };
 
-  // Get impact color based on analysis
-  const getImpactColor = () => {
+  // Get impact gradient based on analysis
+  const getImpactGradient = () => {
     switch (analysis.impact) {
-      case 'high': return 'from-purple-600 to-purple-500';
-      case 'medium': return 'from-blue-600 to-blue-500';
-      case 'low': default: return 'from-gray-600 to-gray-500';
+      case 'high': return 'from-purple-500 via-pink-400 to-fuchsia-500';
+      case 'medium': return 'from-blue-500 via-cyan-400 to-teal-500';
+      case 'low': default: return 'from-gray-500 via-slate-400 to-gray-600';
     }
   };
+
+  // Get tone emoji and description
+  const getToneData = () => {
+    switch (analysis.tone) {
+      case 'aggressive': return { emoji: '🔥', label: 'Aggressive', description: 'Your message may come across as forceful or confrontational' };
+      case 'weak': return { emoji: '😟', label: 'Weak', description: 'Your message lacks confidence and assertiveness' };
+      case 'confusing': return { emoji: '🤔', label: 'Confusing', description: 'Your message may be unclear or hard to understand' };
+      case 'clear': return { emoji: '✨', label: 'Clear', description: 'Your message is well-structured and easy to understand' };
+      case 'neutral': default: return { emoji: '😐', label: 'Neutral', description: 'Your message has a balanced, professional tone' };
+    }
+  };
+
+  // Get impact emoji and description
+  const getImpactData = () => {
+    switch (analysis.impact) {
+      case 'high': return { emoji: '💥', label: 'High Impact', description: 'Your message will likely grab attention and drive action' };
+      case 'medium': return { emoji: '⚡', label: 'Medium Impact', description: 'Your message has moderate influence and engagement potential' };
+      case 'low': default: return { emoji: '💤', label: 'Low Impact', description: 'Your message may not create much engagement or response' };
+    }
+  };
+
+  const toneData = getToneData();
+  const impactData = getImpactData();
 
   return (
     <motion.div 
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, type: 'spring', stiffness: 300 }}
-      className="w-full bg-gray-800/90 backdrop-blur-sm border border-gray-700/50 rounded-lg shadow-lg overflow-hidden mx-1 mb-2"
+      initial={{ opacity: 0, y: 15, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: 0.5, type: 'spring', stiffness: 280, damping: 20 }}
+      className="relative overflow-hidden bg-gradient-to-br from-slate-900/95 via-gray-900/95 to-slate-800/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl mx-1 mb-3"
     >
-      {/* Header with title */}
-      <div className="flex items-center justify-between px-3 py-2 border-b border-gray-700/50">
-        <div className="flex items-center">
-          <Info className="w-4 h-4 text-gray-400 mr-2" />
-          <span className="text-xs font-semibold text-gray-300">Message Analysis</span>
+      {/* Animated background gradient */}
+      <div className="absolute inset-0 opacity-20">
+        <div className={`absolute inset-0 bg-gradient-to-r ${getToneGradient()} animate-pulse`} />
+      </div>
+      
+      {/* Sparkle effects */}
+      <div className="absolute top-2 right-2">
+        <Sparkles className="w-4 h-4 text-white/40 animate-pulse" />
+      </div>
+
+      {/* Header */}
+      <div className="relative flex items-center justify-between px-5 py-3 border-b border-white/10">
+        <div className="flex items-center space-x-3">
+          <div className="relative">
+            <MessageCircle className="w-5 h-5 text-indigo-400" />
+            <div className="absolute -top-1 -right-1 w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+          </div>
+          <div>
+            <h3 className="text-sm font-bold text-white">Message Analysis</h3>
+            <p className="text-xs text-gray-400">AI-powered communication insights</p>
+          </div>
         </div>
-        <span className="text-xs font-bold text-gray-300 bg-gray-700/70 px-2 py-0.5 rounded-full">
-          Score: {Math.round(effectivenessPercentage)}%
-        </span>
+        <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 bg-white/10 backdrop-blur-sm rounded-full px-3 py-1">
+            <Target className="w-3 h-3 text-emerald-400" />
+            <span className="text-xs font-bold text-white">{Math.round(effectivenessPercentage)}%</span>
+          </div>
+        </div>
       </div>
 
       {/* Main content */}
-      <div className="p-3">
-        {/* Tone section */}
-        <div className="mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center">
-              <div className="flex items-center justify-center bg-gray-700/50 rounded-full h-6 w-6 mr-2">
-                <span className="text-sm">{getToneEmoji()}</span>
+      <div className="relative p-5 space-y-4">
+        {/* Tone Analysis */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${getToneGradient()} shadow-lg`}>
+                <span className="text-lg">{toneData.emoji}</span>
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
               </div>
-              <span className="text-xs font-medium capitalize text-white">Tone: {analysis.tone}</span>
+              <div>
+                <h4 className="text-sm font-semibold text-white">{toneData.label}</h4>
+                <p className="text-xs text-gray-400">Communication tone</p>
+              </div>
             </div>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="cursor-help">
-                    <Info className="w-3.5 h-3.5 text-gray-400" />
-                  </div>
+                  <button className="p-1 rounded-full hover:bg-white/10 transition-colors">
+                    <Info className="w-4 h-4 text-gray-400" />
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="w-64 p-3 bg-gray-800 border-gray-700 text-white">
-                  <p className="text-sm font-medium">{getToneDescription()}</p>
+                <TooltipContent side="top" className="max-w-xs p-3 bg-gray-800 border-gray-700 text-white rounded-xl shadow-xl">
+                  <p className="text-sm">{toneData.description}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          <Progress 
-            value={effectivenessPercentage} 
-            className="h-1.5 bg-gray-700/50" 
-            indicatorClassName={`bg-gradient-to-r ${getToneColor()}`} 
-          />
+          <div className="relative">
+            <Progress 
+              value={effectivenessPercentage} 
+              className="h-2 bg-white/10 rounded-full overflow-hidden" 
+              indicatorClassName={`bg-gradient-to-r ${getToneGradient()} rounded-full shadow-lg transition-all duration-1000 ease-out`} 
+            />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+          </div>
         </div>
 
-        {/* Impact section */}
-        <div className="mb-2">
-          <div className="flex items-center justify-between mb-1">
-            <div className="flex items-center">
-              <div className="flex items-center justify-center bg-gray-700/50 rounded-full h-6 w-6 mr-2">
-                <span className="text-sm">{getImpactEmoji()}</span>
+        {/* Impact Analysis */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-3">
+              <div className={`relative flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br ${getImpactGradient()} shadow-lg`}>
+                <span className="text-lg">{impactData.emoji}</span>
+                <div className="absolute inset-0 rounded-xl bg-white/20 animate-pulse" />
               </div>
-              <span className="text-xs font-medium capitalize text-white">Impact: {analysis.impact}</span>
+              <div>
+                <h4 className="text-sm font-semibold text-white">{impactData.label}</h4>
+                <p className="text-xs text-gray-400">Expected influence</p>
+              </div>
             </div>
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="cursor-help">
-                    <Info className="w-3.5 h-3.5 text-gray-400" />
-                  </div>
+                  <button className="p-1 rounded-full hover:bg-white/10 transition-colors">
+                    <Info className="w-4 h-4 text-gray-400" />
+                  </button>
                 </TooltipTrigger>
-                <TooltipContent side="top" className="w-64 p-3 bg-gray-800 border-gray-700 text-white">
-                  <p className="text-sm font-medium">{getImpactDescription()}</p>
+                <TooltipContent side="top" className="max-w-xs p-3 bg-gray-800 border-gray-700 text-white rounded-xl shadow-xl">
+                  <p className="text-sm">{impactData.description}</p>
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
           </div>
-          <Progress 
-            value={analysis.impact === 'high' ? 90 : analysis.impact === 'medium' ? 60 : 30} 
-            className="h-1.5 bg-gray-700/50" 
-            indicatorClassName={`bg-gradient-to-r ${getImpactColor()}`} 
-          />
+          <div className="relative">
+            <Progress 
+              value={analysis.impact === 'high' ? 90 : analysis.impact === 'medium' ? 60 : 30} 
+              className="h-2 bg-white/10 rounded-full overflow-hidden" 
+              indicatorClassName={`bg-gradient-to-r ${getImpactGradient()} rounded-full shadow-lg transition-all duration-1000 ease-out`} 
+            />
+            <div className="absolute inset-0 rounded-full bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse" />
+          </div>
         </div>
 
-        {/* Suggestions */}
+        {/* AI Suggestions */}
         {analysis.suggestions && (
-          <div className="mt-3 pt-2 border-t border-gray-700/30">
-            <p className="text-xs text-gray-300 italic">
-              <span className="font-medium text-purple-400">Suggestion:</span> {analysis.suggestions}
-            </p>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3, duration: 0.4 }}
+            className="relative mt-4 p-4 rounded-xl bg-gradient-to-r from-purple-900/20 to-pink-900/20 border border-purple-500/20"
+          >
+            <div className="flex items-start space-x-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <ThumbsUp className="w-4 h-4 text-purple-400" />
+              </div>
+              <div>
+                <h5 className="text-xs font-semibold text-purple-300 mb-1">AI Suggestion</h5>
+                <p className="text-xs text-gray-300 leading-relaxed">{analysis.suggestions}</p>
+              </div>
+            </div>
+            <div className="absolute top-1 right-2">
+              <div className="w-1 h-1 bg-purple-400 rounded-full animate-ping" />
+            </div>
+          </motion.div>
         )}
       </div>
+
+      {/* Bottom glow effect */}
+      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
     </motion.div>
   );
 };

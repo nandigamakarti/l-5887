@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, X, Loader2, Sparkles, Search, Globe, Database } from 'lucide-react';
+import { Send, X, Loader2, Sparkles, Search, Globe, Database, FileText, Image } from 'lucide-react';
 import { useMessages } from '@/contexts/MessageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { EnhancedAIService, AIMessage, WorkspaceData } from '@/services/enhancedAIService';
@@ -24,7 +24,7 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const [isDeepSearchEnabled, setIsDeepSearchEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { getAllPublicChannelMessages } = useMessages();
+  const { getAllPublicChannelMessages, getAllChannelDocuments, selectedChannelId } = useMessages();
   const { workspace } = useAuth();
 
   // Add welcome message when component mounts
@@ -34,7 +34,7 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
         {
           id: 'welcome',
           role: 'assistant',
-          content: `👋 Welcome to your enhanced AI assistant for **${workspace?.name || 'your workspace'}**!\n\n🔍 **Regular Mode**: I can help you with information from all public channels and pinned documents in your current workspace.\n\n🌐 **Deep Search Mode**: Click the Deep Search button to enable web search capabilities for broader knowledge beyond your workspace.\n\nWhat would you like to know?`,
+          content: `👋 Welcome to your enhanced AI assistant for **${workspace?.name || 'your workspace'}**!\n\n🔍 **Regular Mode**: I can help you with information from all public channels and **pinned documents/images** in your current workspace.\n\n🌐 **Deep Search Mode**: Click the Deep Search button to enable web search capabilities for broader knowledge beyond your workspace.\n\n📌 **Access to Pinned Content**: I can analyze any documents or images you've pinned in your channels.\n\nWhat would you like to know?`,
           timestamp: new Date()
         }
       ]);
@@ -45,6 +45,16 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
+
+  const getPinnedDocuments = () => {
+    if (!selectedChannelId) return [];
+    
+    const channelDocs = getAllChannelDocuments();
+    const currentChannelDocs = channelDocs[selectedChannelId] || [];
+    
+    // Only return pinned documents
+    return currentChannelDocs.filter(doc => doc.isPinned);
+  };
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading || !workspace) return;
@@ -65,10 +75,12 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
     try {
       // Prepare workspace data
       const allChannelMessages = getAllPublicChannelMessages();
+      const pinnedDocs = getPinnedDocuments();
+      
       const workspaceData: WorkspaceData = {
         channels: allChannelMessages,
         channelNames,
-        pinnedDocs: [], // You can add pinned docs here if available
+        pinnedDocs: pinnedDocs,
         currentWorkspaceId: workspace.id
       };
 
@@ -126,6 +138,8 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
     setIsDeepSearchEnabled(!isDeepSearchEnabled);
   };
 
+  const pinnedDocs = getPinnedDocuments();
+
   if (!isOpen) return null;
 
   return (
@@ -142,10 +156,20 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
             <Sparkles className="w-6 h-6 text-blue-400 ai-icon-glow ai-icon-shine" />
             <div>
               <h2 className="text-xl font-semibold text-white">Enhanced AI Assistant</h2>
-              <p className="text-sm text-gray-400">
-                Workspace: {workspace?.name || 'Unknown'} • 
-                Mode: {isDeepSearchEnabled ? 'Deep Search' : 'Regular'}
-              </p>
+              <div className="flex items-center space-x-2 text-sm text-gray-400">
+                <span>Workspace: {workspace?.name || 'Unknown'}</span>
+                <span>•</span>
+                <span>Mode: {isDeepSearchEnabled ? 'Deep Search' : 'Regular'}</span>
+                {pinnedDocs.length > 0 && (
+                  <>
+                    <span>•</span>
+                    <div className="flex items-center space-x-1">
+                      <FileText className="w-3 h-3" />
+                      <span>{pinnedDocs.length} pinned docs</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
           <Button
@@ -157,6 +181,28 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
             <X className="w-5 h-5" />
           </Button>
         </div>
+
+        {/* Pinned Documents Preview */}
+        {pinnedDocs.length > 0 && (
+          <div className="px-4 py-2 bg-gray-800/50 border-b border-gray-700/50">
+            <div className="flex items-center space-x-2 mb-2">
+              <FileText className="w-4 h-4 text-green-400" />
+              <span className="text-sm font-medium text-green-400">Available Pinned Content</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {pinnedDocs.map((doc, index) => (
+                <div key={index} className="flex items-center space-x-1 bg-gray-700/50 px-2 py-1 rounded text-xs text-gray-300">
+                  {doc.type?.startsWith('image/') ? (
+                    <Image className="w-3 h-3 text-blue-400" />
+                  ) : (
+                    <FileText className="w-3 h-3 text-green-400" />
+                  )}
+                  <span>{doc.title}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         <div className="flex-1 p-4 overflow-y-auto bg-gray-800">
@@ -242,7 +288,7 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
               <span className="text-sm text-gray-400">
                 {isDeepSearchEnabled 
                   ? 'Web search enabled - I can access broader knowledge'
-                  : 'Workspace only - I can access your channels and documents'
+                  : 'Workspace only - I can access your channels and pinned documents'
                 }
               </span>
             </div>
@@ -254,7 +300,7 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
               value={inputValue}
               onChange={e => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={`Ask me anything about ${workspace?.name || 'your workspace'}${isDeepSearchEnabled ? ' or beyond...' : '...'}`}
+              placeholder={`Ask me anything about ${workspace?.name || 'your workspace'}${pinnedDocs.length > 0 ? ' and pinned documents' : ''}${isDeepSearchEnabled ? ' or beyond...' : '...'}`}
               className="flex-1 min-h-[44px] max-h-[120px] resize-none bg-gray-700 border border-gray-600 rounded-md text-white placeholder:text-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500"
               rows={1}
             />

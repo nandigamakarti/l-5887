@@ -16,7 +16,7 @@ export interface AIMessage {
 export interface WorkspaceData {
   channels: { [channelId: string]: Message[] };
   channelNames: { [channelId: string]: string };
-  pinnedDocs?: { title: string; content: string; isPinned?: boolean }[];
+  pinnedDocs?: { title: string; content: string; type?: string; isPinned?: boolean }[];
   currentWorkspaceId: string;
 }
 
@@ -44,6 +44,7 @@ You are an AI assistant for workspace "${currentWorkspaceId}". You have access t
 WORKSPACE CONTEXT:
 ${publicChannelsContext}
 
+PINNED DOCUMENTS AND IMAGES:
 ${pinnedDocsContext}
 
 USER QUERY: "${query}"
@@ -51,10 +52,12 @@ USER QUERY: "${query}"
 INSTRUCTIONS:
 - Provide helpful, accurate responses based ONLY on the workspace data above
 - If asked about specific channels, reference the actual content from those channels
+- If asked about documents or images, analyze the pinned content provided above
 - If you don't have enough information from the workspace, acknowledge this limitation
 - Be conversational and friendly
 - Focus only on information from the current workspace
 - Do not make up information that isn't in the provided context
+- If analyzing images or documents, provide detailed insights based on their content
 `;
 
       const response = await axios.post(
@@ -105,6 +108,7 @@ You are an AI assistant with Deep Search capabilities for workspace "${currentWo
 WORKSPACE CONTEXT:
 ${publicChannelsContext}
 
+PINNED DOCUMENTS AND IMAGES:
 ${pinnedDocsContext}
 
 WEB SEARCH RESULTS:
@@ -119,6 +123,7 @@ INSTRUCTIONS:
 - Provide comprehensive, accurate answers combining both sources when relevant
 - Be conversational and helpful
 - Focus on the current workspace context when possible
+- If analyzing pinned documents or images, provide detailed insights
 `;
 
       const response = await axios.post(
@@ -183,7 +188,7 @@ INSTRUCTIONS:
    * Build context from pinned documents only
    */
   private static buildPinnedDocsContext(
-    pinnedDocs?: { title: string; content: string; isPinned?: boolean }[]
+    pinnedDocs?: { title: string; content: string; type?: string; isPinned?: boolean }[]
   ): string {
     if (!pinnedDocs || pinnedDocs.length === 0) {
       return 'No pinned documents available.';
@@ -197,7 +202,8 @@ INSTRUCTIONS:
     
     let context = '\n--- Pinned Documents ---\n';
     onlyPinnedDocs.forEach(doc => {
-      context += `Title: ${doc.title}\nContent: ${doc.content}\n\n`;
+      const docType = doc.type?.startsWith('image/') ? 'IMAGE' : 'DOCUMENT';
+      context += `${docType}: ${doc.title}\nContent: ${doc.content}\n\n`;
     });
     
     return context;
