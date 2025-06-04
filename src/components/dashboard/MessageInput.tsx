@@ -35,6 +35,7 @@ import { useMessages } from '@/contexts/MessageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { ZANI_TRIGGER } from '@/services/zaniService';
+import { storeFile } from '@/utils/fileStorage';
 
 interface MessageInputProps {
   channelId: string;
@@ -91,13 +92,24 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [message]);
 
-  const handleSend = () => {
+  const handleSend = async () => {
     if ((!message.trim() && selectedFiles.length === 0) || !user) return;
 
     let content = message.trim();
+    
+    // Store files and update content with file references
     if (selectedFiles.length > 0) {
-      const fileList = selectedFiles.map(file => `📎 ${file.name}`).join('\n');
-      content = content ? `${content}\n\n${fileList}` : fileList;
+      const filePromises = selectedFiles.map(file => storeFile(file));
+      try {
+        const storedFiles = await Promise.all(filePromises);
+        const fileList = storedFiles.map(file => `📎 ${file.name}`).join('\n');
+        content = content ? `${content}\n\n${fileList}` : fileList;
+      } catch (error) {
+        console.error('Error storing files:', error);
+        // Continue with just the file names
+        const fileList = selectedFiles.map(file => `📎 ${file.name}`).join('\n');
+        content = content ? `${content}\n\n${fileList}` : fileList;
+      }
     }
 
     const messageData = {
@@ -222,7 +234,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   };
   
 
-
   const handleEmojiSelect = (emoji: any) => {
     setMessage(message + emoji.native);
     setShowEmojiPicker(false);
@@ -278,9 +289,19 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }, 0);
   };
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
-      setSelectedFiles(prev => [...prev, ...Array.from(e.target.files || [])]);
+      const newFiles = Array.from(e.target.files);
+      setSelectedFiles(prev => [...prev, ...newFiles]);
+      
+      // Store files immediately when selected
+      try {
+        const filePromises = newFiles.map(file => storeFile(file));
+        await Promise.all(filePromises);
+        console.log('Files stored successfully');
+      } catch (error) {
+        console.error('Error storing files:', error);
+      }
     }
   };
 

@@ -1,3 +1,4 @@
+
 /**
  * Utility functions for handling file storage in the web application
  * This implementation uses localStorage for persistence in the browser
@@ -63,9 +64,8 @@ export const storeFile = async (file: File): Promise<{
         // Save back to localStorage
         localStorage.setItem('slackAI_files', JSON.stringify(files));
         
-        // Return the file metadata (without the data URL to save memory)
-        const fileMetadata = { ...fileData };
-        resolve(fileMetadata);
+        // Return the file metadata
+        resolve(fileData);
       } catch (error) {
         reject(new Error('Failed to store file: ' + (error as Error).message));
       }
@@ -121,6 +121,29 @@ export const getFileById = (fileId: string): {
     return files[fileId] || null;
   } catch (error) {
     console.error('Failed to get file:', error);
+    return null;
+  }
+};
+
+/**
+ * Get file by name
+ * @param fileName Name of the file to retrieve
+ * @returns File metadata object or null if not found
+ */
+export const getFileByName = (fileName: string): {
+  id: string;
+  name: string;
+  type: string;
+  size: number;
+  url: string;
+  timestamp: number;
+} | null => {
+  try {
+    const storage = localStorage.getItem('slackAI_files') || '{}';
+    const files = JSON.parse(storage);
+    return Object.values(files).find((file: any) => file.name === fileName) as any || null;
+  } catch (error) {
+    console.error('Failed to get file by name:', error);
     return null;
   }
 };

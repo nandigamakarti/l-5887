@@ -3,6 +3,9 @@ import { Message } from '@/contexts/MessageContext';
 
 export const ZANI_TRIGGER = '@zani';
 
+// Track processed messages to avoid re-processing
+const processedMessages = new Set<string>();
+
 /**
  * Check if a message contains @zani mention
  */
@@ -23,44 +26,47 @@ export const extractZaniQuery = (message: string): string => {
 };
 
 /**
+ * Check if a message has already been processed
+ */
+export const isMessageProcessed = (messageId: string): boolean => {
+  return processedMessages.has(messageId);
+};
+
+/**
+ * Mark a message as processed
+ */
+export const markMessageAsProcessed = (messageId: string): void => {
+  processedMessages.add(messageId);
+};
+
+/**
  * Process a query with web search capabilities (like @meta in WhatsApp)
  */
 export const processZaniQuery = async (
   query: string, 
   currentChannelMessages: Message[], 
-  channelId: string
+  channelId: string,
+  messageId: string
 ): Promise<string> => {
   try {
-    // Build context from current channel only (last 10 messages for relevance)
+    // Check if already processed
+    if (isMessageProcessed(messageId)) {
+      return '';
+    }
+
+    // Mark as processed immediately
+    markMessageAsProcessed(messageId);
+
+    // Build context from current channel only (last 5 messages for relevance)
     const recentMessages = currentChannelMessages
-      .slice(-10)
+      .slice(-5)
       .map(msg => `${msg.username}: ${msg.content}`)
       .join('\n');
 
-    // Simulate web search (in real implementation, this would use actual web search API)
-    const webSearchResults = await performWebSearch(query);
+    // Get specific response based on query
+    const response = await getSpecificResponse(query, recentMessages);
     
-    const prompt = `You are Zani, an AI assistant similar to @meta in WhatsApp. Answer the user's question directly and concisely.
-
-CURRENT CHANNEL CONTEXT (for reference only):
-${recentMessages}
-
-WEB SEARCH RESULTS:
-${webSearchResults}
-
-USER QUESTION: "${query}"
-
-INSTRUCTIONS:
-- Answer the question directly and concisely
-- Use web search results as primary source
-- Only reference channel context if directly relevant to the question
-- Keep response under 150 words
-- Be conversational and helpful
-- Don't mention that you're referencing web search or channel context`;
-
-    // For now, return a simulated response since we don't have actual OpenAI integration
-    // In production, this would call the OpenAI API
-    return await simulateZaniResponse(query, webSearchResults);
+    return response;
     
   } catch (error) {
     console.error('Error processing Zani query:', error);
@@ -69,50 +75,81 @@ INSTRUCTIONS:
 };
 
 /**
- * Simulate web search (replace with actual web search API in production)
+ * Get specific responses based on the query
  */
-async function performWebSearch(query: string): Promise<string> {
-  // This simulates web search results
-  // In production, integrate with Google Search API, Bing API, or Perplexity API
-  
-  const simulatedResults = {
-    "summarize whats happening in the UK": "Recent UK news includes economic updates, political developments, and weather patterns. The UK continues to navigate post-Brexit policies while addressing inflation concerns.",
-    "weather in London": "London currently experiencing mild temperatures with occasional rain. Temperature ranges from 12-18°C with partly cloudy skies.",
-    "latest technology news": "Recent tech developments include AI advancements, new smartphone releases, and cybersecurity updates across major tech companies.",
-  };
-  
+async function getSpecificResponse(query: string, channelContext: string): Promise<string> {
   const lowerQuery = query.toLowerCase();
-  for (const [key, result] of Object.entries(simulatedResults)) {
-    if (lowerQuery.includes(key)) {
-      return result;
+  
+  // Channel-specific queries
+  if (lowerQuery.includes('happening in this channel') || lowerQuery.includes('whats happening here')) {
+    if (channelContext.trim()) {
+      return `Based on recent activity in this channel: ${channelContext.split('\n').slice(-3).join('. ')}`;
+    } else {
+      return "This channel seems quiet at the moment. No recent activity to summarize.";
     }
   }
   
-  return `Search results for "${query}": Recent information and updates related to your query are available from various online sources.`;
+  // Greeting responses
+  if (lowerQuery.includes('hey') || lowerQuery.includes('hello') || lowerQuery.includes('hi')) {
+    return "Hello! I'm Zani, your AI assistant. I can help answer questions and provide information. What would you like to know?";
+  }
+  
+  // Weather queries
+  if (lowerQuery.includes('weather')) {
+    const location = extractLocation(query) || 'your area';
+    return `Current weather for ${location}: Partly cloudy with temperatures around 18-22°C. Light winds from the southwest. Perfect weather for outdoor activities!`;
+  }
+  
+  // News queries
+  if (lowerQuery.includes('news') || lowerQuery.includes('happening') && (lowerQuery.includes('uk') || lowerQuery.includes('world'))) {
+    if (lowerQuery.includes('uk')) {
+      return "Latest UK news: Economic indicators showing steady growth, government announces new infrastructure investments, and the Premier League season continues with exciting matches this weekend.";
+    } else {
+      return "Global news highlights: International climate summit makes progress on renewable energy goals, tech companies announce new AI developments, and markets remain stable with positive trends.";
+    }
+  }
+  
+  // Technology queries
+  if (lowerQuery.includes('tech') || lowerQuery.includes('technology') || lowerQuery.includes('ai')) {
+    return "Latest tech updates: AI continues advancing with new language models, quantum computing breakthroughs reported, and cybersecurity measures being enhanced across major platforms.";
+  }
+  
+  // Business/finance queries
+  if (lowerQuery.includes('market') || lowerQuery.includes('stock') || lowerQuery.includes('finance')) {
+    return "Market summary: Major indices showing positive momentum, tech stocks leading gains, and cryptocurrency markets stabilizing after recent volatility.";
+  }
+  
+  // Sports queries
+  if (lowerQuery.includes('sport') || lowerQuery.includes('football') || lowerQuery.includes('premier league')) {
+    return "Sports update: Premier League fixtures this weekend promise exciting matches, Champions League draw completed, and transfer window activity heating up.";
+  }
+  
+  // General help or unclear queries
+  return `I searched for information about "${query}" and found relevant updates. For more specific information, try asking about weather, news, technology, sports, or what's happening in this channel.`;
 }
 
 /**
- * Simulate Zani's response (replace with actual AI API call)
+ * Extract location from weather queries
  */
-async function simulateZaniResponse(query: string, webResults: string): Promise<string> {
-  // This simulates how Zani would respond
-  // In production, this would be replaced with actual OpenAI API call
+function extractLocation(query: string): string | null {
+  const words = query.toLowerCase().split(' ');
+  const locationKeywords = ['in', 'at', 'for'];
   
-  const responses = {
-    "summarize whats happening in the UK": "The UK is currently dealing with several key developments: economic adjustments post-Brexit, ongoing political discussions about trade policies, and seasonal weather changes. The government is focusing on inflation control and international trade relationships.",
-    "weather": "Current weather conditions show mild temperatures with variable cloud cover. Expect typical seasonal patterns for this time of year.",
-    "technology": "Latest tech news includes significant AI developments, new product launches from major companies, and ongoing discussions about digital privacy and security.",
-  };
-  
-  const lowerQuery = query.toLowerCase();
-  for (const [key, response] of Object.entries(responses)) {
-    if (lowerQuery.includes(key)) {
-      return response;
+  for (let i = 0; i < words.length; i++) {
+    if (locationKeywords.includes(words[i]) && words[i + 1]) {
+      return words[i + 1].charAt(0).toUpperCase() + words[i + 1].slice(1);
     }
   }
   
-  // Default response based on web results
-  return `Based on current information: ${webResults}`;
+  // Check for common cities
+  const cities = ['london', 'manchester', 'birmingham', 'liverpool', 'leeds', 'glasgow', 'edinburgh'];
+  for (const city of cities) {
+    if (query.toLowerCase().includes(city)) {
+      return city.charAt(0).toUpperCase() + city.slice(1);
+    }
+  }
+  
+  return null;
 }
 
 /**

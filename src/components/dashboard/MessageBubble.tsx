@@ -20,7 +20,13 @@ import { Input } from '@/components/ui/input';
 import { Message, useMessages } from '@/contexts/MessageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import FilePreview from './FilePreview';
-import { containsZaniMention, extractZaniQuery, processZaniQuery, highlightZaniMentions } from '@/services/zaniService';
+import { 
+  containsZaniMention, 
+  extractZaniQuery, 
+  processZaniQuery, 
+  highlightZaniMentions,
+  isMessageProcessed
+} from '@/services/zaniService';
 import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface MessageBubbleProps {
@@ -55,18 +61,24 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // Check if message is pinned
   const isPinned = message.isPinned || false;
   
-  // Process @zani - only for current channel, reset on channel change
+  // Process @zani - only once per message
   useEffect(() => {
     const processZani = async () => {
-      if (message.content && containsZaniMention(message.content) && !zaniResponse && !isProcessingZani) {
+      if (message.content && 
+          containsZaniMention(message.content) && 
+          !isMessageProcessed(message.id) && 
+          !isProcessingZani) {
+        
         const query = extractZaniQuery(message.content);
         if (query) {
           setIsProcessingZani(true);
           try {
             // Only get messages from current channel
             const currentChannelMessages = getMessages(message.channelId) || [];
-            const response = await processZaniQuery(query, currentChannelMessages, message.channelId);
-            setZaniResponse(response);
+            const response = await processZaniQuery(query, currentChannelMessages, message.channelId, message.id);
+            if (response) {
+              setZaniResponse(response);
+            }
           } catch (error) {
             console.error('Error processing Zani query:', error);
             setZaniResponse('Sorry, I encountered an error processing your request.');
@@ -78,13 +90,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     };
     
     processZani();
-  }, [message.content, message.channelId, getMessages, zaniResponse, isProcessingZani]);
-
-  // Reset Zani response when channel changes
-  useEffect(() => {
-    setZaniResponse(null);
-    setIsProcessingZani(false);
-  }, [message.channelId]);
+  }, [message.content, message.channelId, message.id, getMessages, isProcessingZani]);
 
   // Extended emoji collection organized by categories
   const emojiCategories = {
@@ -121,7 +127,7 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   const formatMessageContent = (content: string) => {
-    // Check if content contains actual file attachments with better parsing
+    // Handle actual file attachments from localStorage or uploaded files
     const filePattern = /📎 (.+?)(?:\n|$)/g;
     const files = [];
     let match;
@@ -132,8 +138,8 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       files.push({
         name: fileName,
         type: getFileType(fileName),
-        url: createFileUrl(fileName),
-        size: Math.floor(Math.random() * 5000000) + 100000
+        url: getActualFileUrl(fileName),
+        size: getFileSize(fileName)
       });
       textContent = textContent.replace(match[0], '').trim();
     }
@@ -180,20 +186,47 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     return 'application/octet-stream';
   };
 
-  const createFileUrl = (fileName: string) => {
+  const getActualFileUrl = (fileName: string) => {
+    // Try to get from localStorage first (actual uploaded files)
+    const storedFiles = localStorage.getItem('slackAI_files');
+    if (storedFiles) {
+      try {
+        const files = JSON.parse(storedFiles);
+        const fileEntry = Object.values(files).find((file: any) => file.name === fileName);
+        if (fileEntry && (fileEntry as any).url) {
+          return (fileEntry as any).url;
+        }
+      } catch (error) {
+        console.error('Error retrieving stored file:', error);
+      }
+    }
+
+    // Fallback for demonstration purposes only
     const extension = fileName.split('.').pop()?.toLowerCase();
-    
-    // For images, use actual image placeholders that correspond to the filename
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
-      const imageId = fileName.toLowerCase().includes('logo') ? '400/200' : 
-                    fileName.toLowerCase().includes('profile') ? '150/150' :
-                    fileName.toLowerCase().includes('screenshot') ? '800/600' :
-                    '400/300';
-      return `https://picsum.photos/${imageId}?random=${encodeURIComponent(fileName)}`;
+      return `/lovable-uploads/525e7c65-c028-4da7-a1e6-35cba7375353.png`;
     }
     
-    // For documents, create a proper blob URL or data URL
     return `data:application/octet-stream;base64,${btoa(fileName)}`;
+  };
+
+  const getFileSize = (fileName: string) => {
+    // Try to get actual size from localStorage
+    const storedFiles = localStorage.getItem('slackAI_files');
+    if (storedFiles) {
+      try {
+        const files = JSON.parse(storedFiles);
+        const fileEntry = Object.values(files).find((file: any) => file.name === fileName);
+        if (fileEntry && (fileEntry as any).size) {
+          return (fileEntry as any).size;
+        }
+      } catch (error) {
+        console.error('Error retrieving file size:', error);
+      }
+    }
+    
+    // Default fallback
+    return Math.floor(Math.random() * 5000000) + 100000;
   };
 
   const handleFileDownload = (file: any) => {
