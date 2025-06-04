@@ -12,19 +12,21 @@ interface EnhancedAIChatboxProps {
   isOpen: boolean;
   onClose: () => void;
   channelNames: { [channelId: string]: string };
+  currentChannelId?: string;
 }
 
 const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({ 
   isOpen, 
   onClose, 
-  channelNames 
+  channelNames,
+  currentChannelId = 'general'
 }) => {
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isDeepSearchEnabled, setIsDeepSearchEnabled] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { getAllPublicChannelMessages, getAllChannelDocuments, selectedChannelId } = useMessages();
+  const { getAllPublicChannelMessages, getPinnedDocuments } = useMessages();
   const { workspace } = useAuth();
 
   // Add welcome message when component mounts
@@ -46,14 +48,9 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const getPinnedDocuments = () => {
-    if (!selectedChannelId) return [];
-    
-    const channelDocs = getAllChannelDocuments();
-    const currentChannelDocs = channelDocs[selectedChannelId] || [];
-    
-    // Only return pinned documents
-    return currentChannelDocs.filter(doc => doc.isPinned);
+  const getPinnedDocumentsForCurrentChannel = () => {
+    if (!currentChannelId) return [];
+    return getPinnedDocuments(currentChannelId);
   };
 
   const handleSendMessage = async () => {
@@ -75,7 +72,7 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
     try {
       // Prepare workspace data
       const allChannelMessages = getAllPublicChannelMessages();
-      const pinnedDocs = getPinnedDocuments();
+      const pinnedDocs = getPinnedDocumentsForCurrentChannel();
       
       const workspaceData: WorkspaceData = {
         channels: allChannelMessages,
@@ -138,7 +135,7 @@ const EnhancedAIChatbox: React.FC<EnhancedAIChatboxProps> = ({
     setIsDeepSearchEnabled(!isDeepSearchEnabled);
   };
 
-  const pinnedDocs = getPinnedDocuments();
+  const pinnedDocs = getPinnedDocumentsForCurrentChannel();
 
   if (!isOpen) return null;
 
