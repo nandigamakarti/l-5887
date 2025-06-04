@@ -1,5 +1,4 @@
 
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { MessageProvider, useMessages } from '@/contexts/MessageContext';
@@ -12,7 +11,7 @@ import UserProfile from './UserProfile';
 import CreateChannelModal from './CreateChannelModal';
 import SearchModal from './SearchModal';
 import WorkspaceSettings from './WorkspaceSettings';
-import AIChatbox from './AIChatbox';
+import EnhancedAIChatbox from './EnhancedAIChatbox';
 import { addTechChannelMockData } from '@/utils/addTechChannelMockData';
 
 // Define the Channel interface
@@ -35,7 +34,7 @@ const DashboardContent: React.FC = () => {
   const [showDMSidebar, setShowDMSidebar] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [showWorkspaceSettings, setShowWorkspaceSettings] = useState(false);
-  const [showAIChatbox, setShowAIChatbox] = useState(false);
+  const [showEnhancedAIChatbox, setShowEnhancedAIChatbox] = useState(false);
   const [favoriteChannel, setFavoriteChannel] = useState('general');
   
   // Initialize mock data for Tech channel
@@ -134,8 +133,8 @@ const DashboardContent: React.FC = () => {
     logout();
   };
 
-  const handleAIClick = () => {
-    setShowAIChatbox(true);
+  const handleEnhancedAIClick = () => {
+    setShowEnhancedAIChatbox(true);
   };
 
   return (
@@ -145,7 +144,7 @@ const DashboardContent: React.FC = () => {
         onDMClick={handleDMClick}
         onSearchClick={handleSearchClick}
         onSettingsClick={handleSettingsClick}
-        onAIClick={handleAIClick}
+        onEnhancedAIClick={handleEnhancedAIClick}
       />
       
       {showDMSidebar ? (
@@ -213,10 +212,10 @@ const DashboardContent: React.FC = () => {
         onClose={() => setShowWorkspaceSettings(false)}
       />
 
-      {/* AI Chatbox */}
-      <AIChatbox
-        isOpen={showAIChatbox}
-        onClose={() => setShowAIChatbox(false)}
+      {/* Enhanced AI Chatbox */}
+      <EnhancedAIChatbox
+        isOpen={showEnhancedAIChatbox}
+        onClose={() => setShowEnhancedAIChatbox(false)}
         channelNames={channels.reduce((acc, channel) => {
           acc[channel.id] = channel.name;
           return acc;
@@ -235,4 +234,3 @@ const DashboardLayout: React.FC = () => {
 };
 
 export default DashboardLayout;
-

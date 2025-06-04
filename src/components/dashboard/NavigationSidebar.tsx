@@ -21,7 +21,7 @@ interface NavigationSidebarProps {
   onSearchClick: () => void;
   onSettingsClick: () => void;
   onLogout?: () => void;
-  onAIClick?: () => void;
+  onEnhancedAIClick?: () => void;
 }
 
 const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
@@ -30,7 +30,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   onSearchClick,
   onSettingsClick,
   onLogout,
-  onAIClick
+  onEnhancedAIClick
 }) => {
   const [activeItem, setActiveItem] = useState('home');
   const [animating, setAnimating] = useState<string | null>(null);
@@ -175,11 +175,11 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         <Button
           variant="ghost"
           size="sm"
-          className={`w-12 h-12 p-0 text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'ai' ? 'bg-white/20 scale-110' : ''} ${animating === 'ai' ? 'animate-pulse' : ''}`}
-          onClick={() => handleItemClick('ai', onAIClick || (() => {}))}
+          className={`w-12 h-12 p-0 text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'enhanced-ai' ? 'bg-white/20 scale-110' : ''} ${animating === 'enhanced-ai' ? 'animate-pulse' : ''}`}
+          onClick={() => handleItemClick('enhanced-ai', onEnhancedAIClick || (() => {}))}
         >
           <div className="flex flex-col items-center">
-            <Sparkles className={`w-5 h-5 transition-all duration-300 ai-icon-glow ai-icon-shine ${activeItem === 'ai' ? 'text-blue-400 scale-110' : 'text-blue-300'}`} />
+            <Sparkles className={`w-5 h-5 transition-all duration-300 ai-icon-glow ai-icon-shine ${activeItem === 'enhanced-ai' ? 'text-blue-400 scale-110' : 'text-blue-300'}`} />
             <span className="text-xs mt-1 font-light">AI</span>
           </div>
         </Button>
