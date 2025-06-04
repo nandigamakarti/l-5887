@@ -78,13 +78,27 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
     return foundChannel ? foundChannel.name : channel;
   };
 
+  const ensureDate = (timestamp: any): Date => {
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+      return new Date(timestamp);
+    }
+    return new Date();
+  };
+
   const shouldShowAvatar = (messageIndex: number) => {
     if (messageIndex === 0) return true;
     const currentMessage = channelMessages[messageIndex];
     const previousMessage = channelMessages[messageIndex - 1];
     
+    // Ensure timestamps are Date objects
+    const currentTimestamp = ensureDate(currentMessage.timestamp);
+    const previousTimestamp = ensureDate(previousMessage.timestamp);
+    
     // Show avatar if different user or time gap > 5 minutes
-    const timeDiff = currentMessage.timestamp.getTime() - previousMessage.timestamp.getTime();
+    const timeDiff = currentTimestamp.getTime() - previousTimestamp.getTime();
     return currentMessage.userId !== previousMessage.userId || timeDiff > 5 * 60 * 1000;
   };
 
@@ -93,8 +107,12 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
     const currentMessage = channelMessages[messageIndex];
     const previousMessage = channelMessages[messageIndex - 1];
     
+    // Ensure timestamps are Date objects
+    const currentTimestamp = ensureDate(currentMessage.timestamp);
+    const previousTimestamp = ensureDate(previousMessage.timestamp);
+    
     // Group if same user and within 5 minutes
-    const timeDiff = currentMessage.timestamp.getTime() - previousMessage.timestamp.getTime();
+    const timeDiff = currentTimestamp.getTime() - previousTimestamp.getTime();
     return currentMessage.userId === previousMessage.userId && timeDiff <= 5 * 60 * 1000;
   };
 
