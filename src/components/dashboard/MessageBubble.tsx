@@ -88,6 +88,32 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     "Symbols": ['❤️', '💔', '💯', '✨', '🔥', '💫', '💥', '💢', '💦', '💤', '🎵', '🎶', '⭐', '✅']
   };
 
+  const ensureDate = (timestamp: any): Date => {
+    if (timestamp instanceof Date) {
+      return timestamp;
+    }
+    if (typeof timestamp === 'string' || typeof timestamp === 'number') {
+      return new Date(timestamp);
+    }
+    return new Date();
+  };
+
+  const formatTimestamp = (timestamp: any) => {
+    const date = ensureDate(timestamp);
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+
+    if (minutes < 1) return 'now';
+    if (minutes < 60) return `${minutes}m`;
+    if (hours < 24) return `${hours}h`;
+    if (days < 7) return `${days}d`;
+    
+    return date.toLocaleDateString();
+  };
+
   const formatMessageContent = (content: string) => {
     // Check if content contains file attachments
     const filePattern = /📎 (.+)/g;
@@ -215,23 +241,6 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       setDocumentName(e.target.files[0].name);
     }
   };
-
-  const formatTimestamp = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-    if (minutes < 1) return 'now';
-    if (minutes < 60) return `${minutes}m`;
-    if (hours < 24) return `${hours}h`;
-    if (days < 7) return `${days}d`;
-    
-    return date.toLocaleDateString();
-  };
-
-
 
   const { formattedContent, files } = formatMessageContent(message.content);
 
