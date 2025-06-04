@@ -55,17 +55,17 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   // Check if message is pinned
   const isPinned = message.isPinned || false;
   
-  // Process @zani 
+  // Process @zani - only for current channel, reset on channel change
   useEffect(() => {
-    // Check if message contains @zani mention and process it
     const processZani = async () => {
       if (message.content && containsZaniMention(message.content) && !zaniResponse && !isProcessingZani) {
         const query = extractZaniQuery(message.content);
         if (query) {
           setIsProcessingZani(true);
           try {
-            const channelMessages = getMessages(message.channelId) || [];
-            const response = await processZaniQuery(query, channelMessages, message.channelId);
+            // Only get messages from current channel
+            const currentChannelMessages = getMessages(message.channelId) || [];
+            const response = await processZaniQuery(query, currentChannelMessages, message.channelId);
             setZaniResponse(response);
           } catch (error) {
             console.error('Error processing Zani query:', error);
@@ -79,6 +79,12 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
     
     processZani();
   }, [message.content, message.channelId, getMessages, zaniResponse, isProcessingZani]);
+
+  // Reset Zani response when channel changes
+  useEffect(() => {
+    setZaniResponse(null);
+    setIsProcessingZani(false);
+  }, [message.channelId]);
 
   // Extended emoji collection organized by categories
   const emojiCategories = {
@@ -115,30 +121,32 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   const formatMessageContent = (content: string) => {
-    // Check if content contains file attachments
-    const filePattern = /📎 (.+)/g;
+    // Check if content contains actual file attachments with better parsing
+    const filePattern = /📎 (.+?)(?:\n|$)/g;
     const files = [];
     let match;
     let textContent = content;
 
     while ((match = filePattern.exec(content)) !== null) {
-      const fileName = match[1];
+      const fileName = match[1].trim();
       files.push({
         name: fileName,
         type: getFileType(fileName),
-        url: createMockFileUrl(fileName),
-        size: Math.floor(Math.random() * 5000000) + 100000 // Mock file size
+        url: createFileUrl(fileName),
+        size: Math.floor(Math.random() * 5000000) + 100000
       });
       textContent = textContent.replace(match[0], '').trim();
     }
 
-    // Format text content
-    const mentionRegex = /@(\w+)(?!zani)/g; // Exclude @zani from regular mentions
+    // Format text content with better URL and mention handling
+    const mentionRegex = /@(\w+)(?!zani)/g;
     const channelRegex = /#(\w+)/g;
     
-    // Handle markdown image syntax ![alt](url)
+    // Handle markdown image syntax with actual display
     const imageRegex = /!\[(.*?)\]\((.*?)\)/g;
-    let formattedContent = textContent.replace(imageRegex, '<img src="$2" alt="$1" class="max-w-full rounded-md my-2" style="max-height: 300px;" />');
+    let formattedContent = textContent.replace(imageRegex, (match, alt, url) => {
+      return `<img src="${url}" alt="${alt}" class="max-w-full rounded-md my-2 cursor-pointer hover:opacity-90 transition-opacity" style="max-height: 300px;" onclick="window.open('${url}', '_blank')" />`;
+    });
     
     // Handle URLs - make them blue and clickable
     const urlRegex = /(https?:\/\/[^\s]+)/g;
@@ -163,20 +171,29 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
 
   const getFileType = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
-    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(extension || '')) {
       return 'image/' + (extension === 'jpg' ? 'jpeg' : extension);
     }
     if (extension === 'pdf') return 'application/pdf';
+    if (['doc', 'docx'].includes(extension || '')) return 'application/msword';
+    if (['xls', 'xlsx'].includes(extension || '')) return 'application/excel';
     return 'application/octet-stream';
   };
 
-  const createMockFileUrl = (fileName: string) => {
-    // In a real app, this would be the actual file URL
+  const createFileUrl = (fileName: string) => {
     const extension = fileName.split('.').pop()?.toLowerCase();
+    
+    // For images, use actual image placeholders that correspond to the filename
     if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(extension || '')) {
-      return `https://picsum.photos/400/300?random=${Math.random()}`;
+      const imageId = fileName.toLowerCase().includes('logo') ? '400/200' : 
+                    fileName.toLowerCase().includes('profile') ? '150/150' :
+                    fileName.toLowerCase().includes('screenshot') ? '800/600' :
+                    '400/300';
+      return `https://picsum.photos/${imageId}?random=${encodeURIComponent(fileName)}`;
     }
-    return `https://example.com/files/${fileName}`;
+    
+    // For documents, create a proper blob URL or data URL
+    return `data:application/octet-stream;base64,${btoa(fileName)}`;
   };
 
   const handleFileDownload = (file: any) => {
@@ -295,48 +312,10 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
                         <img 
                           src={file.url} 
                           alt={file.name}
-                          className="max-w-full rounded-md cursor-pointer" 
+                          className="max-w-full rounded-md cursor-pointer hover:opacity-90 transition-opacity" 
                           style={{ maxHeight: '300px' }}
-                          onClick={() => setShowImageActions(file.url)}
+                          onClick={() => window.open(file.url, '_blank')}
                         />
-                        {showImageActions === file.url && (
-                          <div className="absolute top-2 right-2 bg-gray-800 border border-gray-700 rounded-md p-2 shadow-lg z-10">
-                            <div className="flex flex-col gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowEmojiPicker(true)}
-                                className="text-white hover:bg-gray-700 text-xs flex items-center gap-1"
-                              >
-                                <Smile className="w-3 h-3" /> Add reaction
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleReplyClick}
-                                className="text-white hover:bg-gray-700 text-xs flex items-center gap-1"
-                              >
-                                <Reply className="w-3 h-3" /> Share in thread
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleFileDownload(file)}
-                                className="text-white hover:bg-gray-700 text-xs flex items-center gap-1"
-                              >
-                                <Download className="w-3 h-3" /> Download
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => setShowImageActions(null)}
-                                className="text-white hover:bg-gray-700 text-xs"
-                              >
-                                Close
-                              </Button>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     ) : (
                       <FilePreview 
@@ -514,28 +493,29 @@ const MessageBubble: React.FC<MessageBubbleProps> = ({
       
       {/* Zani AI Response - Loading indicator */}
       {isProcessingZani && (
-        <div className="mt-2 flex items-center text-gray-400">
+        <div className="mt-3 flex items-center text-gray-400 bg-gray-800/50 p-3 rounded-lg">
           <div className="animate-pulse flex space-x-1">
-            <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
-            <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
-            <div className="h-2 w-2 bg-blue-400 rounded-full"></div>
+            <div className="h-2 w-2 bg-blue-400 rounded-full animate-bounce"></div>
+            <div className="h-2 w-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+            <div className="h-2 w-2 bg-blue-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
           </div>
-          <span className="ml-2 text-sm">Zani is thinking...</span>
+          <span className="ml-3 text-sm">Zani is searching...</span>
         </div>
       )}
       
       {/* Zani AI Response - Actual response */}
       {!isProcessingZani && zaniResponse && (
-        <div className="mt-4 flex items-start">
+        <div className="mt-4 flex items-start bg-gradient-to-r from-blue-900/20 to-purple-900/20 border-l-4 border-blue-400 rounded-lg p-4">
           <div className="flex-shrink-0 mr-3">
             <UserAvatar name="Zani" size="md" />
           </div>
           <div className="flex-grow">
-            <div className="flex items-center">
-              <span className="font-medium text-gray-200">Zani</span>
+            <div className="flex items-center mb-2">
+              <span className="font-medium text-blue-300">Zani</span>
               <span className="ml-2 text-xs text-gray-400">Just now</span>
+              <span className="ml-2 text-xs text-blue-400 bg-blue-400/10 px-2 py-1 rounded-full">AI Assistant</span>
             </div>
-            <div className="mt-1 p-3 bg-gray-700 rounded-lg text-gray-200 whitespace-pre-wrap">
+            <div className="text-gray-200 whitespace-pre-wrap leading-relaxed">
               {zaniResponse}
             </div>
           </div>
