@@ -1,30 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { 
-  ChevronDown,
-  ChevronRight,
-  Hash,
-  Lock,
-  Plus,
-  Search,
-  MoreVertical,
-  UserPlus,
-  MessageSquare,
-  Bell,
-  Users,
-  Settings,
-  LogOut
-} from 'lucide-react';
-import { User, Workspace } from '@/contexts/AuthContext';
-import { useMessages } from '@/contexts/MessageContext';
-import DirectMessageModal from './DirectMessageModal';
-import test01Data from '@/data/test01-workspace';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { UserAvatar } from '@/components/ui/user-avatar';
 
-// Define the Channel interface if not already defined elsewhere
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { 
+  Hash, 
+  Lock, 
+  Plus, 
+  ChevronDown, 
+  Settings, 
+  UserPlus, 
+  LogOut,
+  Bell,
+  BellOff,
+  User
+} from 'lucide-react';
+
+interface User {
+  id: string;
+  username: string;
+  email: string;
+  avatar?: string;
+  status?: 'online' | 'away' | 'busy' | 'offline';
+}
+
+interface Workspace {
+  id: string;
+  name: string;
+  domain: string;
+  avatar?: string;
+}
+
 interface Channel {
   id: string;
   name: string;
@@ -40,10 +45,10 @@ interface SidebarProps {
   workspace: Workspace | null;
   currentChannel: string;
   channels: Channel[];
-  onChannelSelect: (channel: string) => void;
+  onChannelSelect: (channelId: string) => void;
+  onProfileClick: () => void;
   onCreateChannel: () => void;
   onInviteTeammates: () => void;
-  onProfileClick: () => void;
   onLogout: () => void;
 }
 
@@ -53,446 +58,154 @@ const Sidebar: React.FC<SidebarProps> = ({
   currentChannel,
   channels,
   onChannelSelect,
+  onProfileClick,
   onCreateChannel,
   onInviteTeammates,
-  onProfileClick,
-  onLogout
+  onLogout,
 }) => {
-  const [channelsExpanded, setChannelsExpanded] = useState(true);
-  const [directMessagesExpanded, setDirectMessagesExpanded] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [showDirectMessageModal, setShowDirectMessageModal] = useState(false);
-  const { messages } = useMessages();
+  const [showChannels, setShowChannels] = useState(true);
+  const [notifications, setNotifications] = useState(true);
 
-  // Use Test01 workspace participants when workspace id is 3
-  const [directMessages, setDirectMessages] = useState([
-    { id: 'dm-1', name: 'Sarah Wilson', presence: 'active', unreadCount: 1 },
-    { id: 'dm-2', name: 'Mike Chen', presence: 'away', unreadCount: 0 },
-    { id: 'dm-3', name: 'Emma Davis', presence: 'offline', unreadCount: 0 },
-    { id: 'dm-4', name: 'John Smith', presence: 'active', unreadCount: 3 },
-    { id: 'dm-5', name: 'Lisa Brown', presence: 'dnd', unreadCount: 0 },
-  ]);
-  
-  // Update members when workspace changes
-  useEffect(() => {
-    if (workspace?.id === '3') {
-      // Use Test01 workspace participants
-      setDirectMessages(test01Data.participants);
-    }
-  }, [workspace?.id]);
-
-  const getPresenceColor = (presence: string) => {
-    switch (presence) {
-      case 'active': return 'bg-green-500';
-      case 'away': return 'border-2 border-green-500 bg-transparent';
-      case 'dnd': return 'bg-red-500';
-      default: return 'bg-gray-400';
-    }
-  };
-
-  // We don't need the unread count anymore
-  const getUnreadCount = (channelId: string) => {
-    return 0; // Return 0 to hide all unread counts
-  };
-
-  const filteredChannels = channels.filter(channel =>
-    channel.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const filteredDirectMessages = directMessages.filter(dm =>
-    dm.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
-  const handleDirectMessageSelect = (userId: string) => {
-    onChannelSelect(userId);
+  const toggleNotifications = () => {
+    setNotifications(!notifications);
   };
 
   return (
-    <motion.div 
-      initial={{ x: -50, opacity: 0 }}
-      animate={{ x: 0, opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="w-64 bg-[#2c0e36] text-white flex flex-col shadow-xl">
+    <div className="w-64 h-full bg-gradient-to-b from-slate-800 to-slate-900 border-r border-slate-700/50 shadow-xl flex flex-col">
       {/* Workspace Header */}
-      <motion.div 
-        whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-        className="p-4 border-b border-white/10 cursor-pointer"
-      >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <motion.h1 
-              className="font-bold text-xl truncate"
-              whileHover={{ scale: 1.02 }}
+      <div className="p-4 border-b border-slate-700/50 bg-gradient-to-r from-slate-800 to-slate-900">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-bold text-white truncate">
+            {workspace?.name || 'Workspace'}
+          </h2>
+          <div className="flex items-center space-x-1">
+            {/* Notifications Toggle */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={toggleNotifications}
+              className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-slate-700/50"
+              title={notifications ? "Disable notifications" : "Enable notifications"}
             >
-              {workspace?.name}
-            </motion.h1>
+              {notifications ? (
+                <Bell className="w-4 h-4" />
+              ) : (
+                <BellOff className="w-4 h-4" />
+              )}
+            </Button>
+            
+            {/* Invite Teammates */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onInviteTeammates}
+              className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-slate-700/50"
+              title="Invite teammates"
+            >
+              <UserPlus className="w-4 h-4" />
+            </Button>
+            
+            {/* Logout */}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onLogout}
+              className="h-8 w-8 p-0 text-gray-400 hover:text-red-400 hover:bg-red-900/20"
+              title="Sign out"
+            >
+              <LogOut className="w-4 h-4" />
+            </Button>
           </div>
-          <motion.div whileHover={{ rotate: 180 }} transition={{ duration: 0.3 }}>
-            <ChevronDown className="w-5 h-5 text-white/60" />
-          </motion.div>
         </div>
         
-        <div className="flex items-center mt-2">
-          <motion.div 
-            className="w-3 h-3 bg-green-500 rounded-full"
-            whileHover={{ scale: 1.2 }}
-            transition={{ duration: 0.2 }}
-          />
-          <span className="ml-2 text-base opacity-80">{user?.displayName}</span>
-        </div>
-      </motion.div>
-
-      {/* Search */}
-      <div className="p-4">
-        <motion.div 
-          className="relative"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        {/* User Profile */}
+        <Button
+          variant="ghost"
+          onClick={onProfileClick}
+          className="w-full h-auto p-3 justify-start bg-slate-700/30 hover:bg-slate-700/50 rounded-lg border border-slate-600/30"
         >
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/60" />
-          <Input
-            type="text"
-            placeholder="Search channels"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-md h-9 text-base focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all duration-200"
-          />
-        </motion.div>
-      </div>
-
-      {/* Sidebar Content */}
-      <div className="flex-1 overflow-y-auto p-4 pt-0 sidebar-content">
-        <div className="mb-4">
-          {/* Channels Section */}
-          <motion.div whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }} className="rounded-md">
-            <Button
-              variant="ghost"
-              onClick={() => setChannelsExpanded(!channelsExpanded)}
-              className="w-full justify-between text-white hover:bg-white/10 h-10 px-2 mb-1 transition-all duration-200"
-            >
-              <div className="flex items-center text-base font-semibold text-white/70">
-                <motion.div
-                  animate={{ rotate: channelsExpanded ? 0 : -90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                </motion.div>
-                Channels
+          <div className="flex items-center space-x-3 w-full">
+            <div className="relative">
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+                <User className="w-4 h-4 text-white" />
               </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.div
-                      whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-                      whileTap={{ scale: 0.95 }}
-                      className="rounded-full"
-                    >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCreateChannel();
-                        }}
-                        className="hover:bg-white/20 h-7 w-7 p-0 rounded-full"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </motion.div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Create a new channel</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </Button>
-          </motion.div>
-          
-          <AnimatePresence>
-            {channelsExpanded && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="space-y-1 pt-1">
-                  {filteredChannels.map((channel) => {
-                    const isActive = currentChannel === channel.id;
-                    return (
-                      <motion.div
-                        key={channel.id}
-                        whileHover={{ x: 4 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <Button
-                          variant="ghost"
-                          onClick={() => onChannelSelect(channel.id)}
-                          className={`w-full justify-start text-white hover:bg-white/10 h-9 text-base font-normal px-2 transition-all duration-200 ${
-                            isActive ? 'bg-white/20 font-medium' : ''
-                          }`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center min-w-0">
-                              <motion.div
-                                whileHover={{ rotate: isActive ? 0 : 10, scale: 1.1 }}
-                                className="mr-2 flex-shrink-0"
-                              >
-                                {channel.isPrivate ? (
-                                  <Lock className={`w-4 h-4 ${isActive ? 'text-purple-300' : 'text-white/70'}`} />
-                                ) : (
-                                  <Hash className={`w-4 h-4 ${isActive ? 'text-purple-300' : 'text-white/70'}`} />
-                                )}
-                              </motion.div>
-                              <span className="truncate">{channel.name}</span>
-                            </div>
-                            {/* Removed unread count numbers */}
-                          </div>
-                        </Button>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* Direct Messages Section */}
-        <div className="mb-4">
-          <motion.div whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }} className="rounded-md">
-            <Button
-              variant="ghost"
-              onClick={() => setDirectMessagesExpanded(!directMessagesExpanded)}
-              className="w-full justify-between text-white hover:bg-white/10 h-10 px-2 mb-1 transition-all duration-200"
-            >
-              <div className="flex items-center text-base font-semibold text-white/70">
-                <motion.div
-                  animate={{ rotate: directMessagesExpanded ? 0 : -90 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <ChevronDown className="w-4 h-4 mr-1" />
-                </motion.div>
-                <div className="flex items-center">
-                  <MessageSquare className="w-4 h-4 mr-1.5 text-white/70" />
-                  Direct messages
-                </div>
-              </div>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <motion.div
-                      whileHover={{ scale: 1.1, backgroundColor: 'rgba(255, 255, 255, 0.2)' }}
-                      whileTap={{ scale: 0.95 }}
-                      className="rounded-full"
-                    >
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setShowDirectMessageModal(true);
-                        }}
-                        className="hover:bg-white/20 h-7 w-7 p-0 rounded-full"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </motion.div>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">
-                    <p>Start a direct message</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </Button>
-          </motion.div>
-          
-          <AnimatePresence>
-            {directMessagesExpanded && (
-              <motion.div 
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: 'auto', opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                className="overflow-hidden"
-              >
-                <div className="space-y-1 pt-1">
-                  {filteredDirectMessages.map((dm) => {
-                    const isActive = currentChannel === dm.id;
-                    return (
-                      <motion.div
-                        key={dm.id}
-                        whileHover={{ x: 4 }}
-                        whileTap={{ scale: 0.98 }}
-                      >
-                        <Button
-                          variant="ghost"
-                          onClick={() => onChannelSelect(dm.id)}
-                          className={`w-full justify-start text-white hover:bg-white/10 h-9 text-base font-normal px-2 transition-all duration-200 ${
-                            isActive ? 'bg-white/20 font-medium' : ''
-                          }`}
-                        >
-                          <div className="flex items-center justify-between w-full">
-                            <div className="flex items-center min-w-0">
-                              <motion.div 
-                                className="relative mr-2 flex-shrink-0"
-                                whileHover={{ scale: 1.1 }}
-                              >
-                                <div className="w-4 h-4 rounded-full overflow-hidden">
-                                  <UserAvatar 
-                                    name={dm.name} 
-                                    size="xs" 
-                                    className="w-full h-full"
-                                  />
-                                </div>
-                                <motion.div 
-                                  className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ${getPresenceColor(dm.presence)}`}
-                                  animate={dm.presence === 'active' ? { scale: [1, 1.2, 1] } : {}}
-                                  transition={{ repeat: dm.presence === 'active' ? Infinity : 0, duration: 2 }}
-                                />
-                              </motion.div>
-                              <span className="truncate">{dm.name}</span>
-                            </div>
-                            {/* Removed unread count numbers */}
-                          </div>
-                        </Button>
-                      </motion.div>
-                    );
-                  })}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="px-4 py-2 flex justify-around border-t border-white/10">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.button
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <Bell className="w-5 h-5" />
-              </motion.button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Notifications</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.button
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onInviteTeammates}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white/70 hover:text-white hover:bg-white/10 transition-colors"
-              >
-                <Users className="w-5 h-5" />
-              </motion.button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Invite teammates</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-        
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <motion.button
-                whileHover={{ scale: 1.1, y: -2 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onLogout}
-                className="w-10 h-10 rounded-full flex items-center justify-center text-white bg-red-600 hover:bg-red-700 transition-colors"
-              >
-                <LogOut className="w-5 h-5" />
-              </motion.button>
-            </TooltipTrigger>
-            <TooltipContent side="top">
-              <p>Logout</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* User Profile Section */}
-      <div className="mt-auto">
-        <motion.div 
-          className="p-4 border-t border-white/10"
-          whileHover={{ backgroundColor: 'rgba(255, 255, 255, 0.05)' }}
-        >
-          <Button
-            variant="ghost"
-            onClick={onProfileClick}
-            className="w-full justify-start text-white hover:bg-white/10 h-12 px-2 transition-all duration-200"
-          >
-            <div className="flex items-center">
-              <motion.div 
-                className="relative mr-3"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-md flex items-center justify-center shadow-md">
-                  <span className="text-white font-bold text-base">
-                    {user?.displayName?.charAt(0).toUpperCase() || 'T'}
-                  </span>
-                </div>
-                <motion.div 
-                  className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-[#2c0e36]"
-                  animate={{ scale: [1, 1.2, 1] }}
-                  transition={{ repeat: Infinity, duration: 2 }}
-                />
-              </motion.div>
-              <div className="flex-1 text-left">
-                <div className="text-white font-medium text-base truncate">
-                  {user?.displayName || 'User'}
-                </div>
-                <div className="text-white/60 text-sm">
-                  {user?.status?.emoji || '✨'} {user?.status?.text || 'Active'}
-                </div>
-              </div>
-              {/* Removed More button */}
+              <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 border-2 border-slate-800 rounded-full"></div>
             </div>
-          </Button>
-        </motion.div>
+            <div className="flex-1 text-left">
+              <div className="text-sm font-medium text-white">
+                {user?.username || 'User'}
+              </div>
+              <div className="text-xs text-gray-400">
+                {user?.status || 'online'}
+              </div>
+            </div>
+          </div>
+        </Button>
       </div>
 
-      {/* Direct Message Modal */}
-      <DirectMessageModal
-        isOpen={showDirectMessageModal}
-        onClose={() => setShowDirectMessageModal(false)}
-        onUserSelect={handleDirectMessageSelect}
-      />
-    </motion.div>
+      {/* Channels Section */}
+      <div className="flex-1 overflow-hidden">
+        <div className="p-3">
+          <div className="flex items-center justify-between mb-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowChannels(!showChannels)}
+              className="flex items-center space-x-2 text-gray-300 hover:text-white h-auto p-1"
+            >
+              <ChevronDown className={`w-4 h-4 transition-transform ${showChannels ? '' : '-rotate-90'}`} />
+              <span className="text-sm font-medium">Channels</span>
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCreateChannel}
+              className="h-6 w-6 p-0 text-gray-400 hover:text-white hover:bg-slate-700/50"
+              title="Create channel"
+            >
+              <Plus className="w-4 h-4" />
+            </Button>
+          </div>
+
+          {showChannels && (
+            <div className="space-y-1 max-h-96 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+              {channels.map((channel) => (
+                <Button
+                  key={channel.id}
+                  variant="ghost"
+                  onClick={() => onChannelSelect(channel.id)}
+                  className={`w-full justify-start h-auto p-2 text-left transition-all duration-200 ${
+                    currentChannel === channel.id
+                      ? 'bg-blue-600/20 text-blue-300 border-l-2 border-blue-400'
+                      : 'text-gray-300 hover:text-white hover:bg-slate-700/30'
+                  }`}
+                >
+                  <div className="flex items-center space-x-2 w-full">
+                    {channel.isPrivate ? (
+                      <Lock className="w-4 h-4 flex-shrink-0" />
+                    ) : (
+                      <Hash className="w-4 h-4 flex-shrink-0" />
+                    )}
+                    <span className="flex-1 truncate text-sm">
+                      {channel.name}
+                    </span>
+                    {channel.unreadCount && channel.unreadCount > 0 && (
+                      <Badge 
+                        variant="destructive" 
+                        className="h-5 min-w-5 text-xs px-1.5 bg-red-500 hover:bg-red-500"
+                      >
+                        {channel.unreadCount > 99 ? '99+' : channel.unreadCount}
+                      </Badge>
+                    )}
+                  </div>
+                </Button>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 };
 
 export default Sidebar;
-
-// Add this to your global CSS file or component styles
-/*
-.sidebar-content::-webkit-scrollbar {
-  width: 6px;
-}
-
-.sidebar-content::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.sidebar-content::-webkit-scrollbar-thumb {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-}
-
-.sidebar-content::-webkit-scrollbar-thumb:hover {
-  background-color: rgba(255, 255, 255, 0.2);
-}
-*/

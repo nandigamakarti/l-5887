@@ -78,6 +78,22 @@ export const generateMeetingNotes = (messages: Message[], channelName: string): 
 };
 
 /**
+ * Shows meeting notes in a popup dialog
+ * @param messages Array of messages to generate notes from
+ * @param channelName Name of the channel or thread
+ * @param onShowNotes Callback to show the notes in a popup
+ */
+export const showMeetingNotesPopup = (
+  messages: Message[], 
+  channelName: string,
+  onShowNotes: (notes: string, title: string) => void
+): void => {
+  const notes = generateMeetingNotes(messages, channelName);
+  const title = `AI Meeting Notes - ${channelName}`;
+  onShowNotes(notes, title);
+};
+
+/**
  * Downloads meeting notes as a text file
  * @param messages Array of messages to generate notes from
  * @param channelName Name of the channel or thread

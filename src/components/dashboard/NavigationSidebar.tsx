@@ -1,29 +1,23 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Home, 
   MessageSquare, 
-  Search,
-  Settings,
-  MoreHorizontal,
-  Plus,
-  LogOut,
-  Zap,
+  Search, 
+  Settings, 
   Brain,
+  ChevronLeft,
   ChevronRight,
-  Users
+  Sparkles
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
 
 interface NavigationSidebarProps {
   onHomeClick: () => void;
   onDMClick: () => void;
   onSearchClick: () => void;
   onSettingsClick: () => void;
-  onLogout?: () => void;
-  onEnhancedAIClick?: () => void;
+  onEnhancedAIClick: () => void;
 }
 
 const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
@@ -31,189 +25,120 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   onDMClick,
   onSearchClick,
   onSettingsClick,
-  onLogout,
-  onEnhancedAIClick
+  onEnhancedAIClick,
 }) => {
-  const [activeItem, setActiveItem] = useState('home');
-  const [animating, setAnimating] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
-  const navigate = useNavigate();
-  const { workspace } = useAuth();
-  
-  // Get available workspaces from localStorage
-  const [workspaces, setWorkspaces] = useState<any[]>([]);
-  
-  const { user } = useAuth();
-  
-  useEffect(() => {
-    try {
-      const savedWorkspaces = localStorage.getItem('user_workspaces');
-      if (savedWorkspaces) {
-        const parsedWorkspaces = JSON.parse(savedWorkspaces);
-        
-        // Apply filtering based on user email
-        let filteredWorkspaces;
-        if (user?.email === 'nanibroly@gmail.com') {
-          // Show all workspaces for nanibroly@gmail.com
-          filteredWorkspaces = parsedWorkspaces;
-        } else {
-          // Hide Test01 workspace for other users
-          filteredWorkspaces = parsedWorkspaces.filter((ws: any) => ws.id !== '3' && ws.name !== 'Test01');
-        }
-        
-        setWorkspaces(filteredWorkspaces);
-      }
-    } catch (error) {
-      console.error('Error loading workspaces:', error);
+
+  const navigationItems = [
+    {
+      icon: Home,
+      label: 'Home',
+      onClick: onHomeClick,
+      tooltip: 'Go to Home'
+    },
+    {
+      icon: MessageSquare,
+      label: 'DMs',
+      onClick: onDMClick,
+      tooltip: 'Direct Messages'
+    },
+    {
+      icon: Search,
+      label: 'Search',
+      onClick: onSearchClick,
+      tooltip: 'Search Messages'
+    },
+    {
+      icon: Brain,
+      label: 'AI Assistant',
+      onClick: onEnhancedAIClick,
+      tooltip: 'AI Assistant',
+      special: true
+    },
+    {
+      icon: Settings,
+      label: 'Settings',
+      onClick: onSettingsClick,
+      tooltip: 'Workspace Settings'
     }
-  }, [user]);
-  
-  const handleItemClick = (item: string, callback: () => void) => {
-    setAnimating(item);
-    setActiveItem(item);
-    
-    // Add a small delay for the animation to complete
-    setTimeout(() => {
-      setAnimating(null);
-      callback();
-    }, 300);
-  };
-  
-  // Handle workspace click - redirect to workspaces page
-  const handleWorkspaceClick = () => {
-    navigate('/workspaces');
-  };
+  ];
 
-  const sidebarWidth = isCollapsed ? 'w-16' : 'w-64';
-  
   return (
-    <div className={`${sidebarWidth} bg-slack-aubergine flex flex-col transition-all duration-300 ease-in-out relative`}>
-      {/* Collapse/Expand Button */}
-      <button
-        onClick={() => setIsCollapsed(!isCollapsed)}
-        className="absolute -right-3 top-6 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-md hover:shadow-lg transition-shadow z-10"
-      >
-        <ChevronRight className={`w-4 h-4 text-gray-600 transition-transform ${isCollapsed ? 'rotate-0' : 'rotate-180'}`} />
-      </button>
-
-      {/* Header */}
-      <div className="p-4 border-b border-white/10">
-        {/* Current Workspace Icon - Clickable */}
-        <button 
-          onClick={handleWorkspaceClick}
-          className="w-10 h-10 bg-white rounded-lg flex items-center justify-center mb-4 hover:ring-2 hover:ring-white/30 transition-all cursor-pointer"
-          title="Switch workspace"
-        >
-          <span className="text-slack-aubergine font-bold text-lg">
-            {workspace?.name?.charAt(0) || 'M'}
-          </span>
-        </button>
-
-        {!isCollapsed && (
-          <div className="text-white">
-            <h2 className="font-bold text-lg">{workspace?.name || 'Workspace'}</h2>
-            <p className="text-xs text-white/70">{user?.displayName}</p>
+    <div className={`h-full bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700/50 shadow-2xl transition-all duration-300 flex flex-col ${
+      isCollapsed ? 'w-16' : 'w-20'
+    }`}>
+      {/* Logo Section */}
+      <div className="p-4 border-b border-slate-700/50 flex items-center justify-center">
+        <div className={`flex items-center space-x-2 ${isCollapsed ? 'justify-center' : ''}`}>
+          <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+            <Sparkles className="w-5 h-5 text-white" />
           </div>
-        )}
+          {!isCollapsed && (
+            <span className="text-sm font-bold text-white hidden lg:block">AI</span>
+          )}
+        </div>
       </div>
-      
+
       {/* Navigation Items */}
-      <div className="flex-1 py-4 space-y-2">
-        <div className={`px-2 ${isCollapsed ? 'flex flex-col items-center space-y-2' : ''}`}>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "sm" : "default"}
-            className={`${isCollapsed ? 'w-12 h-12 p-0' : 'w-full justify-start'} text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'home' ? 'bg-white/20 scale-105' : ''} ${animating === 'home' ? 'animate-pulse' : ''}`}
-            onClick={() => handleItemClick('home', onHomeClick)}
-          >
-            <Home className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} transition-all duration-300 ${activeItem === 'home' ? 'text-white scale-110' : 'text-gray-300'}`} />
-            {!isCollapsed && <span>Home</span>}
-          </Button>
-        </div>
-        
-        <div className={`px-2 ${isCollapsed ? 'flex flex-col items-center space-y-2' : ''}`}>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "sm" : "default"}
-            className={`${isCollapsed ? 'w-12 h-12 p-0' : 'w-full justify-start'} text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'messages' ? 'bg-white/20 scale-105' : ''} ${animating === 'messages' ? 'animate-pulse' : ''}`}
-            onClick={() => handleItemClick('messages', onDMClick)}
-          >
-            <MessageSquare className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} transition-all duration-300 ${activeItem === 'messages' ? 'text-white scale-110' : 'text-gray-300'}`} />
-            {!isCollapsed && <span>Direct Messages</span>}
-          </Button>
-        </div>
-        
-        <div className={`px-2 ${isCollapsed ? 'flex flex-col items-center space-y-2' : ''}`}>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "sm" : "default"}
-            className={`${isCollapsed ? 'w-12 h-12 p-0' : 'w-full justify-start'} text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'search' ? 'bg-white/20 scale-105' : ''} ${animating === 'search' ? 'animate-pulse' : ''}`}
-            onClick={() => handleItemClick('search', onSearchClick)}
-          >
-            <Search className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} transition-all duration-300 ${activeItem === 'search' ? 'text-white scale-110' : 'text-gray-300'}`} />
-            {!isCollapsed && <span>Search</span>}
-          </Button>
-        </div>
-        
-        <div className={`px-2 ${isCollapsed ? 'flex flex-col items-center space-y-2' : ''}`}>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "sm" : "default"}
-            className={`${isCollapsed ? 'w-12 h-12 p-0' : 'w-full justify-start'} text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'enhanced-ai' ? 'bg-white/20 scale-105' : ''} ${animating === 'enhanced-ai' ? 'animate-pulse' : ''}`}
-            onClick={() => handleItemClick('enhanced-ai', onEnhancedAIClick || (() => {}))}
-          >
-            <Brain className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} transition-all duration-300 ai-icon-glow ai-icon-shine ${activeItem === 'enhanced-ai' ? 'text-blue-400 scale-110' : 'text-blue-300'}`} />
-            {!isCollapsed && <span>AI Assistant</span>}
-          </Button>
-        </div>
-        
-        <div className={`px-2 ${isCollapsed ? 'flex flex-col items-center space-y-2' : ''}`}>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "sm" : "default"}
-            className={`${isCollapsed ? 'w-12 h-12 p-0' : 'w-full justify-start'} text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'settings' ? 'bg-white/20 scale-105' : ''} ${animating === 'settings' ? 'animate-pulse' : ''}`}
-            onClick={() => handleItemClick('settings', onSettingsClick)}
-          >
-            <Settings className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} transition-all duration-300 ${activeItem === 'settings' ? 'text-white scale-110 rotate-45' : 'text-gray-300'}`} />
-            {!isCollapsed && <span>Settings</span>}
-          </Button>
-        </div>
+      <div className="flex-1 flex flex-col space-y-2 p-3">
+        {navigationItems.map((item, index) => {
+          const Icon = item.icon;
+          return (
+            <div key={index} className="relative group">
+              <Button
+                variant="ghost"
+                size={isCollapsed ? "icon" : "sm"}
+                onClick={item.onClick}
+                className={`w-full h-12 relative transition-all duration-200 hover:bg-slate-700/50 hover:scale-105 ${
+                  item.special 
+                    ? 'bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 hover:from-purple-600/30 hover:to-blue-600/30' 
+                    : 'hover:bg-slate-700/30'
+                } ${
+                  isCollapsed ? 'justify-center px-0' : 'justify-center lg:justify-start'
+                }`}
+                title={isCollapsed ? item.tooltip : undefined}
+              >
+                <Icon className={`w-5 h-5 ${
+                  item.special ? 'text-purple-400' : 'text-slate-300'
+                }`} />
+                {!isCollapsed && (
+                  <span className={`ml-2 text-sm hidden lg:block ${
+                    item.special ? 'text-purple-300' : 'text-slate-300'
+                  }`}>
+                    {item.label}
+                  </span>
+                )}
+                {item.special && (
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600/10 to-blue-600/10 rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                )}
+              </Button>
+              
+              {/* Tooltip for collapsed state */}
+              {isCollapsed && (
+                <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 border border-slate-600">
+                  {item.tooltip}
+                </div>
+              )}
+            </div>
+          );
+        })}
       </div>
-      
-      {/* Footer Actions */}
-      <div className="p-4 space-y-2 border-t border-white/10">
-        <div className={`${isCollapsed ? 'flex flex-col items-center space-y-2' : ''}`}>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "sm" : "default"}
-            className={`${isCollapsed ? 'w-12 h-12 p-0' : 'w-full justify-start'} text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'add' ? 'bg-white/20 scale-105' : ''} ${animating === 'add' ? 'animate-pulse' : ''}`}
-            onClick={() => {
-              setAnimating('add');
-              setActiveItem('add');
-              setTimeout(() => setAnimating(null), 300);
-            }}
-          >
-            <Plus className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} text-gray-300 transition-all duration-300 hover:text-white hover:scale-110 hover:rotate-90`} />
-            {!isCollapsed && <span>Add Channel</span>}
-          </Button>
-        </div>
-        
-        <div className={`${isCollapsed ? 'flex flex-col items-center space-y-2' : ''}`}>
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "sm" : "default"}
-            className={`${isCollapsed ? 'w-12 h-12 p-0' : 'w-full justify-start'} text-white hover:bg-white/20 rounded-lg transition-all duration-300 ${activeItem === 'workspaces' ? 'bg-white/20 scale-105' : ''} ${animating === 'workspaces' ? 'animate-pulse' : ''}`}
-            onClick={() => {
-              setAnimating('workspaces');
-              setTimeout(() => {
-                window.location.href = '/workspaces';
-              }, 300);
-            }}
-          >
-            <Users className={`${isCollapsed ? 'w-5 h-5' : 'w-5 h-5 mr-3'} text-red-400 transition-all duration-300 hover:text-red-300 hover:scale-110`} />
-            {!isCollapsed && <span className="text-red-400">Switch Workspace</span>}
-          </Button>
-        </div>
+
+      {/* Collapse Toggle Button */}
+      <div className="p-3 border-t border-slate-700/50">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="w-full h-10 hover:bg-slate-700/30 transition-all duration-200"
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {isCollapsed ? (
+            <ChevronRight className="w-4 h-4 text-slate-400" />
+          ) : (
+            <ChevronLeft className="w-4 h-4 text-slate-400" />
+          )}
+        </Button>
       </div>
     </div>
   );

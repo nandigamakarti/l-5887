@@ -2,7 +2,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
-import { ArrowRight, Brain, Cpu, Shield, Sparkles, Zap, Users } from 'lucide-react';
+import { ArrowRight, Brain, Cpu, Shield, Sparkles, Zap, Users, Bot, MessageSquare } from 'lucide-react';
 import ImagePlaceholder from '../components/ImagePlaceholder';
 
 const AIAgentsSection: React.FC = () => {
@@ -20,13 +20,13 @@ const AIAgentsSection: React.FC = () => {
 
   const agentCards = [
     {
-      icon: <Brain className="w-8 h-8 text-purple-600" />,
+      icon: <MessageSquare className="w-8 h-8 text-purple-600" />,
       title: "Sales Assistant",
       description: "Update sales proposals, track leads, and manage your pipeline with ease.",
       color: "bg-purple-100"
     },
     {
-      icon: <Cpu className="w-8 h-8 text-blue-600" />,
+      icon: <Bot className="w-8 h-8 text-blue-600" />,
       title: "IT Helper",
       description: "Resolve IT issues, reset passwords, and manage access requests automatically.",
       color: "bg-blue-100"
@@ -38,7 +38,7 @@ const AIAgentsSection: React.FC = () => {
       color: "bg-green-100"
     },
     {
-      icon: <Sparkles className="w-8 h-8 text-yellow-600" />,
+      icon: <Brain className="w-8 h-8 text-yellow-600" />,
       title: "Creative Assistant",
       description: "Generate ideas, summarize discussions, and help with content creation.",
       color: "bg-yellow-100"
@@ -56,7 +56,7 @@ const AIAgentsSection: React.FC = () => {
           className="text-center max-w-3xl mx-auto mb-16"
         >
           <div className="flex items-center justify-center mb-4">
-            <Sparkles className="w-10 h-10 text-purple-600 mr-3" />
+            <Bot className="w-10 h-10 text-purple-600 mr-3" />
             <span className="text-purple-600 font-semibold text-lg">AI Agents</span>
           </div>
           <h2 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
@@ -123,7 +123,7 @@ const AIAgentsSection: React.FC = () => {
             className="w-full lg:w-1/2 p-6"
           >
             <div className="flex items-center mb-4">
-              <Brain className="w-8 h-8 text-purple-600 mr-3" />
+              <Sparkles className="w-8 h-8 text-purple-600 mr-3" />
               <span className="text-purple-600 font-semibold">Advanced AI</span>
             </div>
             
@@ -138,7 +138,7 @@ const AIAgentsSection: React.FC = () => {
                 { icon: <Zap className="w-4 h-4" />, text: "Automate routine tasks" },
                 { icon: <Brain className="w-4 h-4" />, text: "Answer questions using your company knowledge" },
                 { icon: <Users className="w-4 h-4" />, text: "Connect to your business systems" },
-                { icon: <Sparkles className="w-4 h-4" />, text: "Learn from your team's interactions" }
+                { icon: <Bot className="w-4 h-4" />, text: "Learn from your team's interactions" }
               ].map((item, index) => (
                 <li key={index} className="flex items-start">
                   <div className="mr-3 mt-1 text-green-500">
@@ -149,7 +149,7 @@ const AIAgentsSection: React.FC = () => {
               ))}
             </ul>
             <Button className="bg-purple-600 hover:bg-purple-700 text-white group">
-              <Brain className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
+              <Bot className="w-4 h-4 mr-2 group-hover:scale-110 transition-transform" />
               Learn more about AI agents 
               <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Button>
