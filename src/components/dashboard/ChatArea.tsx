@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -37,9 +36,25 @@ interface ChatAreaProps {
   channel: string;
   user: User | null;
   channels?: Channel[];
+  onSendMessage?: (content: string, files?: File[]) => void;
+  onThreadSelect?: (messageId: string) => void;
+  onUpdateMessage?: (messageId: string, newContent: string) => void;
+  onDeleteMessage?: (messageId: string) => void;
+  currentView?: 'channels' | 'dms';
+  selectedDM?: string | null;
 }
 
-const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => {
+const ChatArea: React.FC<ChatAreaProps> = ({ 
+  channel, 
+  user, 
+  channels = [],
+  onSendMessage,
+  onThreadSelect,
+  onUpdateMessage,
+  onDeleteMessage,
+  currentView,
+  selectedDM
+}) => {
   const { messages } = useMessages();
   const [isFavorite, setIsFavorite] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
@@ -56,7 +71,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
   }, [channelMessages]);
 
   const getChannelIcon = () => {
-    if (channel.startsWith('dm-')) {
+    if (typeof channel === 'string' && channel.startsWith('dm-')) {
       return <Users className="w-5 h-5" />;
     }
     return <Hash className="w-5 h-5" />;
@@ -64,7 +79,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
 
   const getChannelName = () => {
     // For direct messages
-    if (channel.startsWith('dm-')) {
+    if (typeof channel === 'string' && channel.startsWith('dm-')) {
       const dmNames = {
         'dm-1': 'Sarah Wilson',
         'dm-2': 'Mike Chen',
@@ -77,7 +92,7 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
     
     // For channels, look up the name in the channels array
     const foundChannel = channels.find(c => c.id === channel);
-    return foundChannel ? foundChannel.name : channel;
+    return foundChannel ? foundChannel.name : (typeof channel === 'string' ? channel : 'Unknown');
   };
 
   const ensureDate = (timestamp: any): Date => {

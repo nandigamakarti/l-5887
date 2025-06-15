@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { addMockThreadsToChannels } from '@/utils/mockThreadData';
 import { addTeamConversation } from '@/utils/mockTeamConversation';
@@ -31,10 +30,28 @@ export interface Message {
   isPinned?: boolean;
 }
 
+export interface Channel {
+  id: string;
+  name: string;
+  isPrivate: boolean;
+  description?: string;
+  unreadCount?: number;
+  createdAt: string;
+  createdBy?: string;
+}
+
 export interface MessageContextType {
   messages: { [channelId: string]: Message[] };
   documents: { [channelId: string]: Document[] };
-  addMessage: (channelId: string, message: Omit<Message, 'id' | 'timestamp' | 'reactions' | 'replies' | 'replyCount'>) => void;
+  channels: Channel[];
+  currentChannel: string;
+  setCurrentChannel: (channelId: string) => void;
+  addChannel: (channel: Channel) => void;
+  addMessage: (channelId: string, message: Omit<Message, 'id' | 'timestamp' | 'reactions' | 'replies' | 'replyCount' | 'threadParticipants'>) => void;
+  updateMessage: (messageId: string, newContent: string) => void;
+  deleteMessage: (messageId: string) => void;
+  clearMessages: () => void;
+  setMessages: (messages: { [channelId: string]: Message[] }) => void;
   addReply: (channelId: string, parentMessageId: string, reply: Omit<Message, 'id' | 'timestamp' | 'reactions' | 'replies' | 'replyCount'>) => void;
   getMessages: (channelId: string) => Message[] | undefined;
   getAllPublicChannelMessages: () => { [channelId: string]: Message[] };
@@ -93,6 +110,25 @@ export const MessageProvider: React.FC<{ children: ReactNode }> = ({ children })
     return {};
   });
   
+  // Initialize channels state
+  const [channels, setChannels] = useState<Channel[]>([
+    {
+      id: 'general',
+      name: 'general',
+      isPrivate: false,
+      description: 'General discussion',
+      createdAt: new Date().toISOString()
+    },
+    {
+      id: 'random',
+      name: 'random',
+      isPrivate: false,
+      description: 'Random conversations',
+      createdAt: new Date().toISOString()
+    }
+  ]);
+
+  const [currentChannel, setCurrentChannel] = useState('general');
   const [selectedThread, setSelectedThread] = useState<{ channelId: string; messageId: string } | null>(null);
   
   // Initialize documents state
@@ -147,6 +183,10 @@ export const MessageProvider: React.FC<{ children: ReactNode }> = ({ children })
     return {};
   };
 
+  const addChannel = (channel: Channel) => {
+    setChannels(prev => [...prev, channel]);
+  };
+
   const addMessage = (channelId: string, messageData: Omit<Message, 'id' | 'timestamp' | 'reactions' | 'replies' | 'replyCount' | 'threadParticipants'>) => {
     const newMessage: Message = {
       ...messageData,
@@ -166,6 +206,43 @@ export const MessageProvider: React.FC<{ children: ReactNode }> = ({ children })
       saveMessagesToLocalStorage(updatedMessages);
       return updatedMessages;
     });
+  };
+
+  const updateMessage = (messageId: string, newContent: string) => {
+    setMessages(prev => {
+      const updatedMessages = { ...prev };
+      Object.keys(updatedMessages).forEach(channelId => {
+        updatedMessages[channelId] = updatedMessages[channelId].map(msg => {
+          if (msg.id === messageId) {
+            return { ...msg, content: newContent, edited: true, editedAt: new Date() };
+          }
+          return msg;
+        });
+      });
+      saveMessagesToLocalStorage(updatedMessages);
+      return updatedMessages;
+    });
+  };
+
+  const deleteMessage = (messageId: string) => {
+    setMessages(prev => {
+      const updatedMessages = { ...prev };
+      Object.keys(updatedMessages).forEach(channelId => {
+        updatedMessages[channelId] = updatedMessages[channelId].filter(msg => msg.id !== messageId);
+      });
+      saveMessagesToLocalStorage(updatedMessages);
+      return updatedMessages;
+    });
+  };
+
+  const clearMessages = () => {
+    setMessages({});
+    localStorage.removeItem('messages_3');
+  };
+
+  const setMessagesWrapper = (newMessages: { [channelId: string]: Message[] }) => {
+    setMessages(newMessages);
+    saveMessagesToLocalStorage(newMessages);
   };
 
   const addReply = (channelId: string, messageId: string, replyData: Omit<Message, 'id' | 'timestamp' | 'reactions' | 'replies' | 'replyCount' | 'threadParticipants'>) => {
@@ -472,7 +549,15 @@ export const MessageProvider: React.FC<{ children: ReactNode }> = ({ children })
     <MessageContext.Provider value={{
       messages,
       documents,
+      channels,
+      currentChannel,
+      setCurrentChannel,
+      addChannel,
       addMessage,
+      updateMessage,
+      deleteMessage,
+      clearMessages,
+      setMessages: setMessagesWrapper,
       addReply,
       selectedThread,
       setSelectedThread,
