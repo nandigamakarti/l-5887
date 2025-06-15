@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { addMockThreadsToChannels } from '@/utils/mockThreadData';
 import { addTeamConversation } from '@/utils/mockTeamConversation';
@@ -47,7 +48,7 @@ export interface MessageContextType {
   currentChannel: string;
   setCurrentChannel: (channelId: string) => void;
   addChannel: (channel: Channel) => void;
-  addMessage: (channelId: string, message: Omit<Message, 'id' | 'timestamp' | 'reactions' | 'replies' | 'replyCount' | 'threadParticipants'>) => void;
+  addMessage: (channelId: string, message: Omit<Message, 'id' | 'timestamp' | 'reactions' | 'replies' | 'replyCount'>) => void;
   updateMessage: (messageId: string, newContent: string) => void;
   deleteMessage: (messageId: string) => void;
   clearMessages: () => void;
