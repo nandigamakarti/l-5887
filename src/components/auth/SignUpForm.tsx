@@ -1,10 +1,11 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
-import { Eye, EyeOff, Mail, Lock, User, ArrowLeft, Building } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Eye, EyeOff, Sparkles, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { motion } from 'framer-motion';
 
 interface SignUpFormProps {
   onBack: () => void;
@@ -17,230 +18,242 @@ const SignUpForm: React.FC<SignUpFormProps> = ({
   onSignIn,
   isCreatingWorkspace = false
 }) => {
-  const { signup } = useAuth();
   const [formData, setFormData] = useState({
+    displayName: '',
     email: '',
     password: '',
-    displayName: '',
-    workspaceName: ''
+    confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const { signup } = useAuth();
+
+  const handleInputChange = (field: string, value: string) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
+
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+    
+    if (!formData.displayName.trim()) {
+      newErrors.displayName = 'Display name is required';
+    }
+    
+    if (!formData.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (formData.password !== formData.confirmPassword) {
+      newErrors.confirmPassword = 'Passwords do not match';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!agreeToTerms) {
-      setError('Please agree to the Terms of Service and Privacy Policy');
-      return;
-    }
-
-    setError('');
+    
+    if (!validateForm()) return;
+    
     setIsLoading(true);
-
     try {
-      await signup(
-        formData.email,
-        formData.password,
-        formData.displayName,
-        isCreatingWorkspace ? formData.workspaceName : undefined
-      );
-    } catch (err) {
-      setError('Failed to create account. Please try again.');
+      await signup(formData.email, formData.password, formData.displayName);
+    } catch (error) {
+      console.error('Signup failed:', error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
+  const passwordRequirements = [
+    { met: formData.password.length >= 6, text: 'At least 6 characters' },
+    { met: /[A-Z]/.test(formData.password), text: 'One uppercase letter' },
+    { met: /[0-9]/.test(formData.password), text: 'One number' }
+  ];
 
   return (
-    <div className="min-h-screen bg-slack-light-gray flex items-center justify-center p-4">
-      <div className="w-full max-w-md space-y-6">
-        <div className="text-center">
-          <Button
-            variant="ghost"
-            onClick={onBack}
-            className="mb-4 text-slack-text-secondary hover:text-slack-text-primary"
-          >
-            <ArrowLeft className="mr-2 w-4 h-4" />
-            Back
-          </Button>
-          
-          <div className="mx-auto w-16 h-16 bg-slack-aubergine rounded-slack-xl flex items-center justify-center mb-6">
-            {isCreatingWorkspace ? (
-              <Building className="w-8 h-8 text-white" />
-            ) : (
-              <User className="w-8 h-8 text-white" />
-            )}
-          </div>
-          <h1 className="text-2xl font-bold text-slack-text-primary mb-2">
-            {isCreatingWorkspace ? 'Create your workspace' : 'Create your account'}
-          </h1>
-          <p className="text-13 text-slack-text-secondary">
-            {isCreatingWorkspace 
-              ? 'Set up a new Slack workspace for your team'
-              : 'Join the conversation with your team'
-            }
-          </p>
-        </div>
-
-        <Card className="slack-shadow border-slack">
-          <CardHeader>
-            <CardTitle className="text-18 text-slack-text-primary">
-              {isCreatingWorkspace ? 'Workspace details' : 'Account information'}
-            </CardTitle>
-            <CardDescription className="text-13 text-slack-text-secondary">
-              {isCreatingWorkspace 
-                ? 'Enter your workspace and admin account details'
-                : 'Fill in your information to get started'
-              }
-            </CardDescription>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800 flex items-center justify-center p-4">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="w-full max-w-md"
+      >
+        <Card className="bg-white/95 backdrop-blur-sm shadow-2xl border border-white/20">
+          <CardHeader className="text-center pb-6">
+            <motion.div 
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              className="flex items-center justify-center mb-6"
+            >
+              <div className="w-16 h-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                <Sparkles className="w-8 h-8 text-white" />
+              </div>
+            </motion.div>
+            <h1 className="text-3xl font-bold text-slate-900 mb-2">
+              {isCreatingWorkspace ? 'Create your workspace' : 'Join Slack'}
+            </h1>
+            <p className="text-slate-600">
+              {isCreatingWorkspace ? 'Set up your team workspace' : 'Create your account to get started'}
+            </p>
           </CardHeader>
-          <CardContent>
-            {error && (
-              <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-slack-md">
-                <p className="text-13 text-red-600">{error}</p>
-              </div>
-            )}
-
+          
+          <CardContent className="space-y-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              {isCreatingWorkspace && (
-                <div className="space-y-2">
-                  <label htmlFor="workspace-name" className="text-15 font-bold text-slack-text-primary">
-                    Workspace name
-                  </label>
-                  <div className="relative">
-                    <Building className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slack-text-muted" />
-                    <Input
-                      id="workspace-name"
-                      type="text"
-                      placeholder="Acme Corp"
-                      value={formData.workspaceName}
-                      onChange={(e) => handleInputChange('workspaceName', e.target.value)}
-                      className="pl-10 text-15 border-slack rounded-slack-md h-11 bg-white text-slate-900"
-                      required
-                    />
-                  </div>
-                  <p className="text-11 text-slack-text-muted">
-                    This will be the name of your Slack workspace
-                  </p>
-                </div>
-              )}
-
-              <div className="space-y-2">
-                <label htmlFor="display-name" className="text-15 font-bold text-slack-text-primary">
-                  Full name
+              <div>
+                <label htmlFor="displayName" className="block text-sm font-semibold text-slate-700 mb-2">
+                  Full Name
                 </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slack-text-muted" />
-                  <Input
-                    id="display-name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={formData.displayName}
-                    onChange={(e) => handleInputChange('displayName', e.target.value)}
-                    className="pl-10 text-15 border-slack rounded-slack-md h-11 bg-white text-slate-900"
-                    required
-                  />
-                </div>
+                <Input
+                  id="displayName"
+                  type="text"
+                  value={formData.displayName}
+                  onChange={(e) => handleInputChange('displayName', e.target.value)}
+                  placeholder="Enter your full name"
+                  className={`h-12 text-lg bg-white border-2 rounded-xl transition-colors ${
+                    errors.displayName ? 'border-red-500' : 'border-slate-300 focus:border-purple-500'
+                  }`}
+                />
+                {errors.displayName && (
+                  <p className="text-red-500 text-sm mt-1">{errors.displayName}</p>
+                )}
               </div>
-
-              <div className="space-y-2">
-                <label htmlFor="email" className="text-15 font-bold text-slack-text-primary">
+              
+              <div>
+                <label htmlFor="email" className="block text-sm font-semibold text-slate-700 mb-2">
                   Email
                 </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slack-text-muted" />
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    value={formData.email}
-                    onChange={(e) => handleInputChange('email', e.target.value)}
-                    className="pl-10 text-15 border-slack rounded-slack-md h-11 bg-white text-slate-900"
-                    required
-                  />
-                </div>
+                <Input
+                  id="email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) => handleInputChange('email', e.target.value)}
+                  placeholder="name@company.com"
+                  className={`h-12 text-lg bg-white border-2 rounded-xl transition-colors ${
+                    errors.email ? 'border-red-500' : 'border-slate-300 focus:border-purple-500'
+                  }`}
+                />
+                {errors.email && (
+                  <p className="text-red-500 text-sm mt-1">{errors.email}</p>
+                )}
               </div>
-
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-15 font-bold text-slack-text-primary">
+              
+              <div>
+                <label htmlFor="password" className="block text-sm font-semibold text-slate-700 mb-2">
                   Password
                 </label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slack-text-muted" />
                   <Input
                     id="password"
                     type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a password"
                     value={formData.password}
                     onChange={(e) => handleInputChange('password', e.target.value)}
-                    className="pl-10 pr-10 text-15 border-slack rounded-slack-md h-11 bg-white text-slate-900"
-                    required
+                    placeholder="Create a password"
+                    className={`h-12 text-lg bg-white border-2 rounded-xl pr-12 transition-colors ${
+                      errors.password ? 'border-red-500' : 'border-slate-300 focus:border-purple-500'
+                    }`}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="sm"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-slack-text-muted hover:text-slack-text-secondary"
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
                   >
-                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                  </button>
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </Button>
                 </div>
-                <p className="text-11 text-slack-text-muted">
-                  Password must be at least 6 characters long
-                </p>
+                {errors.password && (
+                  <p className="text-red-500 text-sm mt-1">{errors.password}</p>
+                )}
+                
+                {formData.password && (
+                  <div className="mt-3 space-y-2">
+                    {passwordRequirements.map((req, index) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <div className={`w-4 h-4 rounded-full flex items-center justify-center ${
+                          req.met ? 'bg-green-500' : 'bg-slate-300'
+                        }`}>
+                          {req.met && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className={`text-sm ${
+                          req.met ? 'text-green-600' : 'text-slate-500'
+                        }`}>
+                          {req.text}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-
-              <div className="flex items-start space-x-2 pt-2">
-                <Checkbox
-                  id="agree-terms"
-                  checked={agreeToTerms}
-                  onCheckedChange={(checked) => setAgreeToTerms(checked as boolean)}
-                  className="mt-1"
-                />
-                <label htmlFor="agree-terms" className="text-13 text-slack-text-secondary leading-5">
-                  I agree to the{' '}
-                  <a href="#" className="text-slack-aubergine hover:underline">
-                    Terms of Service
-                  </a>{' '}
-                  and{' '}
-                  <a href="#" className="text-slack-aubergine hover:underline">
-                    Privacy Policy
-                  </a>
+              
+              <div>
+                <label htmlFor="confirmPassword" className="block text-sm font-semibold text-slate-700 mb-2">
+                  Confirm Password
                 </label>
+                <div className="relative">
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    value={formData.confirmPassword}
+                    onChange={(e) => handleInputChange('confirmPassword', e.target.value)}
+                    placeholder="Confirm your password"
+                    className={`h-12 text-lg bg-white border-2 rounded-xl pr-12 transition-colors ${
+                      errors.confirmPassword ? 'border-red-500' : 'border-slate-300 focus:border-purple-500'
+                    }`}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-2 top-1/2 transform -translate-y-1/2 text-slate-500 hover:text-slate-700"
+                  >
+                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </Button>
+                </div>
+                {errors.confirmPassword && (
+                  <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
+                )}
               </div>
-
+              
               <Button
                 type="submit"
-                className="w-full bg-slack-aubergine hover:bg-slack-aubergine/90 text-white font-bold h-11 rounded-slack-md"
-                disabled={isLoading || !agreeToTerms}
+                disabled={isLoading}
+                className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white rounded-xl shadow-lg transition-all duration-200"
               >
-                {isLoading 
-                  ? (isCreatingWorkspace ? 'Creating workspace...' : 'Creating account...') 
-                  : (isCreatingWorkspace ? 'Create Workspace' : 'Create Account')
-                }
+                {isLoading ? 'Creating account...' : 'Create Account'}
               </Button>
             </form>
+            
+            <div className="text-center">
+              <div className="text-sm text-slate-600">
+                Already have an account?{' '}
+                <Button
+                  variant="link"
+                  onClick={onSignIn}
+                  className="text-purple-600 hover:text-purple-700 font-semibold p-0 h-auto"
+                >
+                  Sign in instead
+                </Button>
+              </div>
+            </div>
           </CardContent>
         </Card>
-
-        <div className="text-center">
-          <p className="text-13 text-slack-text-secondary">
-            Already have an account?{' '}
-            <Button
-              variant="link"
-              onClick={onSignIn}
-              className="text-13 text-slack-aubergine hover:text-slack-aubergine/80 p-0 font-normal"
-            >
-              Sign in instead
-            </Button>
-          </p>
-        </div>
-      </div>
+      </motion.div>
     </div>
   );
 };

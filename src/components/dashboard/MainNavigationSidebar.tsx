@@ -14,13 +14,16 @@ import {
   Plus,
   MoreHorizontal,
   Home,
-  Bell
+  Bell,
+  User,
+  Clock,
+  Settings
 } from 'lucide-react';
-import { User, Workspace } from '@/contexts/AuthContext';
+import { User as UserType, Workspace } from '@/contexts/AuthContext';
 import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface MainNavigationSidebarProps {
-  user: User | null;
+  user: UserType | null;
   workspace: Workspace | null;
   currentView: 'channels' | 'dms' | 'activity' | 'threads';
   onViewChange: (view: 'channels' | 'dms' | 'activity' | 'threads') => void;
@@ -93,6 +96,43 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
       lastMessage: 'Working on the proposal',
       timestamp: '1d ago'
     },
+  ];
+
+  // Mock activity data including login activities
+  const activityData = [
+    {
+      id: 1,
+      type: 'login',
+      user: user?.displayName,
+      message: 'signed in to the workspace',
+      timestamp: '5 minutes ago',
+      icon: User
+    },
+    {
+      id: 2,
+      type: 'notification',
+      user: 'Sarah Wilson',
+      message: 'mentioned you in #general',
+      timestamp: '10 minutes ago',
+      icon: Bell,
+      unread: true
+    },
+    {
+      id: 3,
+      type: 'login',
+      user: 'Mike Chen',
+      message: 'joined the workspace',
+      timestamp: '2 hours ago',
+      icon: User
+    },
+    {
+      id: 4,
+      type: 'settings',
+      user: 'Admin',
+      message: 'updated notification settings for all members',
+      timestamp: '1 day ago',
+      icon: Settings
+    }
   ];
 
   const getPresenceColor = (presence: string) => {
@@ -252,9 +292,9 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
           <div className="grid grid-cols-2 gap-2">
             {[
               { id: 'all', label: 'All' },
-              { id: 'threads', label: 'Threads' },
+              { id: 'mentions', label: 'Mentions' },
               { id: 'reactions', label: 'Reactions' },
-              { id: 'invitations', label: 'Invitations' }
+              { id: 'logins', label: 'Login Activity' }
             ].map((filter) => (
               <Button
                 key={filter.id}
@@ -276,13 +316,64 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
       
       {/* Activity Content */}
       <div className="px-4 py-2">
-        <div className="text-center py-8">
-          <Bell className="w-8 h-8 mx-auto text-white/40 mb-2" />
-          <p className="text-white/60 text-sm">No recent activity</p>
-          <p className="text-white/40 text-xs mt-1">
-            When you have notifications, they'll show up here
-          </p>
+        <div className="space-y-3">
+          {activityData
+            .filter(activity => {
+              if (activityFilter === 'all') return true;
+              if (activityFilter === 'logins') return activity.type === 'login';
+              if (activityFilter === 'mentions') return activity.type === 'notification';
+              if (activityFilter === 'reactions') return false; // No reactions in mock data
+              return true;
+            })
+            .filter(activity => showUnreadOnly ? activity.unread : true)
+            .map((activity) => {
+              const IconComponent = activity.icon;
+              return (
+                <div
+                  key={activity.id}
+                  className={`p-3 rounded-lg transition-colors ${
+                    activity.unread ? 'bg-blue-500/10 border border-blue-500/20' : 'bg-white/5 hover:bg-white/10'
+                  }`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className={`p-2 rounded-lg ${
+                      activity.type === 'login' ? 'bg-green-500/20' :
+                      activity.type === 'notification' ? 'bg-blue-500/20' :
+                      'bg-purple-500/20'
+                    }`}>
+                      <IconComponent className={`w-4 h-4 ${
+                        activity.type === 'login' ? 'text-green-400' :
+                        activity.type === 'notification' ? 'text-blue-400' :
+                        'text-purple-400'
+                      }`} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-white">
+                        <span className="font-medium">{activity.user}</span> {activity.message}
+                      </div>
+                      <div className="flex items-center mt-1">
+                        <Clock className="w-3 h-3 text-white/40 mr-1" />
+                        <span className="text-xs text-white/60">{activity.timestamp}</span>
+                      </div>
+                    </div>
+                    {activity.unread && (
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
         </div>
+        
+        {activityData.length === 0 && (
+          <div className="text-center py-8">
+            <Bell className="w-8 h-8 mx-auto text-white/40 mb-2" />
+            <p className="text-white/60 text-sm">No recent activity</p>
+            <p className="text-white/40 text-xs mt-1">
+              When you have notifications, they'll show up here
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
