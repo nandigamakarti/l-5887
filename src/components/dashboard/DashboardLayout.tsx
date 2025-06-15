@@ -1,7 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMessages } from '@/contexts/MessageContext';
 import NavigationSidebar from './NavigationSidebar';
+import MainNavigationSidebar from './MainNavigationSidebar';
 import Sidebar from './Sidebar';
 import ChatArea from './ChatArea';
 import ThreadSidebar from './ThreadSidebar';
