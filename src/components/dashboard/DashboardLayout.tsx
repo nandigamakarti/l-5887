@@ -201,8 +201,8 @@ Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeStr
 
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Navigation Sidebar - Left (Fixed width) */}
-      <div className="flex-shrink-0">
+      {/* Left Navigation Sidebar - Fixed width, always visible */}
+      <div className="flex-shrink-0 z-30">
         <NavigationSidebar 
           user={user}
           onHomeClick={handleHomeClick}
@@ -216,11 +216,11 @@ Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeStr
         />
       </div>
 
-      {/* Main Content Area */}
+      {/* Main Content Container */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Main Navigation Sidebar - Center Left (Fixed width) */}
-        {(currentMainView === 'dms' || currentMainView === 'activity') ? (
-          <div className="flex-shrink-0">
+        {/* Main Navigation Sidebar - Conditional based on view */}
+        <div className="flex-shrink-0 z-20">
+          {(currentMainView === 'dms' || currentMainView === 'activity') ? (
             <MainNavigationSidebar
               user={user}
               workspace={workspace}
@@ -231,9 +231,7 @@ Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeStr
               selectedDM={selectedDM || ''}
               onBrowseAllPeople={handleBrowseAllPeople}
             />
-          </div>
-        ) : (
-          <div className="flex-shrink-0">
+          ) : (
             <Sidebar 
               user={user}
               workspace={workspace}
@@ -244,11 +242,11 @@ Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeStr
               onInviteTeammates={() => setShowInviteModal(true)}
               onLogout={handleLogout}
             />
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Chat Area - Flexible */}
-        <div className="flex-1 flex">
+        {/* Chat Area - Takes remaining space */}
+        <div className="flex-1 flex min-w-0">
           <ChatArea 
             user={user}
             channel={currentView === 'dms' && selectedDM ? selectedDM : currentChannel}
@@ -263,7 +261,7 @@ Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeStr
           
           {/* Thread Sidebar */}
           {selectedThread && (
-            <div className="w-96 border-l border-gray-700">
+            <div className="w-96 border-l border-gray-700 flex-shrink-0">
               <div className="p-4">
                 <h3>Thread</h3>
                 <button onClick={() => setSelectedThread(null)}>Close</button>

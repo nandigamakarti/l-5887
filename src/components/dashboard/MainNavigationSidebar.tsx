@@ -12,7 +12,9 @@ import {
   MessageSquare,
   Hash,
   Plus,
-  MoreHorizontal
+  MoreHorizontal,
+  Home,
+  Bell
 } from 'lucide-react';
 import { User, Workspace } from '@/contexts/AuthContext';
 import { UserAvatar } from '@/components/ui/user-avatar';
@@ -102,17 +104,8 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
     }
   };
 
-  const getPresenceText = (presence: string) => {
-    switch (presence) {
-      case 'active': return 'Active';
-      case 'away': return 'Away';
-      case 'dnd': return 'Do not disturb';
-      default: return 'Offline';
-    }
-  };
-
   const renderDirectMessages = () => (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-slack-dark-aubergine">
       {/* Workspace Header */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between mb-4">
@@ -226,7 +219,7 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
   );
 
   const renderActivity = () => (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 overflow-y-auto bg-slack-dark-aubergine">
       {/* Activity Header */}
       <div className="p-4 border-b border-white/10">
         <div className="flex items-center justify-between mb-4">
@@ -242,7 +235,7 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
         </div>
         
         <div className="flex items-center mb-3">
-          <MessageCircle className="w-6 h-6 mr-3 text-purple-400" />
+          <Bell className="w-6 h-6 mr-3 text-purple-400" />
           <h1 className="font-bold text-white text-xl">Activity</h1>
         </div>
         
@@ -284,7 +277,7 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
       {/* Activity Content */}
       <div className="px-4 py-2">
         <div className="text-center py-8">
-          <MessageCircle className="w-8 h-8 mx-auto text-white/40 mb-2" />
+          <Bell className="w-8 h-8 mx-auto text-white/40 mb-2" />
           <p className="text-white/60 text-sm">No recent activity</p>
           <p className="text-white/40 text-xs mt-1">
             When you have notifications, they'll show up here
@@ -295,7 +288,7 @@ const MainNavigationSidebar: React.FC<MainNavigationSidebarProps> = ({
   );
 
   return (
-    <div className="w-80 bg-slack-dark-aubergine text-white flex flex-col h-full">
+    <div className="w-80 h-full">
       {currentView === 'dms' && renderDirectMessages()}
       {currentView === 'activity' && renderActivity()}
     </div>
