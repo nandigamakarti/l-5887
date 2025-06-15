@@ -215,8 +215,8 @@ const DashboardLayout = () => {
         <div className="flex-1 flex">
           <ChatArea 
             user={user}
-            channel={selectedChannel}
-            messages={currentMessages}
+            channel={currentView === 'dms' && selectedDM ? selectedDM : currentChannel}
+            channels={channels}
             onSendMessage={handleSendMessage}
             onThreadSelect={handleThreadSelect}
             onUpdateMessage={handleUpdateMessage}
@@ -249,7 +249,11 @@ const DashboardLayout = () => {
             >
               <X className="w-5 h-5" />
             </Button>
-            <EnhancedAIChatbox />
+            <EnhancedAIChatbox 
+              isOpen={showAIChat}
+              onClose={() => setShowAIChat(false)}
+              channelNames={channelNames}
+            />
           </div>
         </div>
       )}
@@ -279,6 +283,7 @@ const DashboardLayout = () => {
 
       {showSearch && (
         <SearchModal
+          isOpen={showSearch}
           onClose={() => setShowSearch(false)}
         />
       )}
@@ -292,7 +297,13 @@ const DashboardLayout = () => {
 
       {showDMModal && (
         <DirectMessageModal
+          isOpen={showDMModal}
           onClose={() => setShowDMModal(false)}
+          onUserSelect={(userId: string) => {
+            setSelectedDM(userId);
+            setCurrentView('dms');
+            setShowDMModal(false);
+          }}
         />
       )}
     </div>
