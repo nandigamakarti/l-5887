@@ -7,7 +7,9 @@ import {
   Users, 
   ChevronLeft,
   Settings,
-  Bell
+  Bell,
+  MessageCircle,
+  Filter
 } from 'lucide-react';
 import { User, Workspace } from '@/contexts/AuthContext';
 import test01Data from '@/data/test01-workspace';
@@ -29,6 +31,7 @@ const DMSidebar: React.FC<DMSidebarProps> = ({
   selectedDM
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [filterActive, setFilterActive] = useState(false);
 
   // Use Test01 workspace participants when workspace id is 3
   const [workspaceMembers, setWorkspaceMembers] = useState([
@@ -56,54 +59,82 @@ const DMSidebar: React.FC<DMSidebarProps> = ({
     }
   };
 
-  const filteredMembers = workspaceMembers.filter(member =>
-    member.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredMembers = workspaceMembers.filter(member => {
+    const matchesSearch = member.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = !filterActive || member.presence === 'active';
+    return matchesSearch && matchesFilter;
+  });
 
   return (
-    <div className="w-64 bg-slack-dark-aubergine text-white flex flex-col">
+    <div className="w-80 bg-slack-dark-aubergine text-white flex flex-col">
       {/* Header */}
-      <div className="p-4 border-b border-white/10">
-        <div className="flex items-center justify-between mb-4">
+      <div className="p-6 border-b border-white/10">
+        <div className="flex items-center justify-between mb-6">
           <Button
             variant="ghost"
             size="sm"
             onClick={onBackClick}
-            className="text-white hover:bg-white/10 p-1"
+            className="text-white hover:bg-white/10 p-2 rounded-lg"
           >
-            <ChevronLeft className="w-4 h-4" />
+            <ChevronLeft className="w-5 h-5 mr-1" />
+            <span>Back</span>
           </Button>
-          <h1 className="font-bold text-18">Direct Messages</h1>
-          <div className="w-6" />
+          <div className="flex items-center space-x-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setFilterActive(!filterActive)}
+              className={`text-white hover:bg-white/10 p-2 rounded-lg ${filterActive ? 'bg-white/20' : ''}`}
+            >
+              <Filter className="w-4 h-4" />
+            </Button>
+          </div>
         </div>
         
-        <div className="flex items-center mt-1">
-          <div className="w-3 h-3 bg-green-500 rounded-full" />
-          <span className="ml-2 text-13 opacity-80">{user?.displayName}</span>
+        <div className="flex items-center mb-4">
+          <MessageCircle className="w-6 h-6 mr-3 text-purple-400" />
+          <h1 className="font-bold text-xl">Direct Messages</h1>
+        </div>
+        
+        <div className="flex items-center mt-2">
+          <div className="w-3 h-3 bg-green-500 rounded-full mr-2" />
+          <span className="text-sm opacity-80">{user?.displayName}</span>
+          <span className="ml-2 text-xs bg-green-500 px-2 py-1 rounded-full text-white">Online</span>
         </div>
       </div>
 
       {/* Search */}
-      <div className="p-4">
+      <div className="p-4 border-b border-white/10">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-white/60" />
           <Input
             type="text"
-            placeholder="Search people"
+            placeholder="Search people or conversations"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-md h-8 text-13"
+            className="pl-10 bg-white/10 border-white/20 text-white placeholder:text-white/60 rounded-lg h-10 text-sm focus:bg-white/20 transition-colors"
           />
         </div>
+        
+        {filterActive && (
+          <div className="mt-3 p-2 bg-green-500/20 rounded-lg">
+            <span className="text-xs text-green-300">Showing active members only</span>
+          </div>
+        )}
       </div>
 
       {/* Members List */}
-      <div className="flex-1 overflow-y-auto px-4">
+      <div className="flex-1 overflow-y-auto px-4 py-2">
         <div className="mb-4">
-          <h3 className="text-13 font-semibold text-white/70 mb-2 flex items-center">
-            <Users className="w-4 h-4 mr-2" />
-            Workspace Members ({filteredMembers.length})
-          </h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-semibold text-white/70 flex items-center">
+              <Users className="w-4 h-4 mr-2" />
+              Team Members
+            </h3>
+            <span className="text-xs bg-white/10 px-2 py-1 rounded-full">
+              {filteredMembers.length}
+            </span>
+          </div>
           
           <div className="space-y-1">
             {filteredMembers.map((member) => (
@@ -111,22 +142,30 @@ const DMSidebar: React.FC<DMSidebarProps> = ({
                 key={member.id}
                 variant="ghost"
                 onClick={() => onUserSelect(member.id)}
-                className={`w-full justify-start text-white hover:bg-white/10 h-10 text-13 font-normal p-2 ${
-                  selectedDM === member.id ? 'bg-white/20' : ''
+                className={`w-full justify-start text-white hover:bg-white/10 h-12 text-sm font-normal p-3 rounded-lg transition-all ${
+                  selectedDM === member.id ? 'bg-white/20 shadow-sm' : ''
                 }`}
               >
                 <div className="flex items-center w-full">
                   <div className="relative mr-3">
-                    <div className="w-8 h-8 rounded-md overflow-hidden">
+                    <div className="w-9 h-9 rounded-lg overflow-hidden">
                       <UserAvatar 
                         name={member.name} 
                         size="sm" 
                         className="w-full h-full"
                       />
                     </div>
-                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full ${getPresenceColor(member.presence)}`} />
+                    <div className={`absolute -bottom-1 -right-1 w-3 h-3 rounded-full border border-slack-dark-aubergine ${getPresenceColor(member.presence)}`} />
                   </div>
-                  <span className="truncate">{member.name}</span>
+                  <div className="flex-1 text-left">
+                    <div className="font-medium truncate">{member.name}</div>
+                    <div className="text-xs text-white/60 capitalize">
+                      {member.presence === 'dnd' ? 'Do not disturb' : member.presence}
+                    </div>
+                  </div>
+                  {selectedDM === member.id && (
+                    <div className="w-2 h-2 bg-purple-400 rounded-full"></div>
+                  )}
                 </div>
               </Button>
             ))}
@@ -136,18 +175,19 @@ const DMSidebar: React.FC<DMSidebarProps> = ({
 
       {/* Footer */}
       <div className="p-4 border-t border-white/10">
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center justify-between">
           <Button
             variant="ghost"
             size="sm"
-            className="text-white hover:bg-white/10 p-1"
+            className="text-white hover:bg-white/10 p-2 rounded-lg"
           >
-            <Settings className="w-4 h-4" />
+            <Settings className="w-4 h-4 mr-2" />
+            <span className="text-sm">Preferences</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
-            className="text-white hover:bg-white/10 p-1"
+            className="text-white hover:bg-white/10 p-2 rounded-lg"
           >
             <Bell className="w-4 h-4" />
           </Button>
