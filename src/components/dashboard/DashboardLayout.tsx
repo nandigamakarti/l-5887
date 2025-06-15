@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMessages } from '@/contexts/MessageContext';
@@ -15,6 +14,7 @@ import SearchModal from './SearchModal';
 import WorkspaceSettings from './WorkspaceSettings';
 import DirectMessageModal from './DirectMessageModal';
 import DMSidebar from './DMSidebar';
+import AINotesModal from './AINotesModal';
 import { initializeMockData } from '@/utils/initializeMockData';
 import { Button } from '@/components/ui/button';
 import { X } from 'lucide-react';
@@ -58,6 +58,7 @@ const DashboardLayout = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showDMModal, setShowDMModal] = useState(false);
+  const [showAINotes, setShowAINotes] = useState(false);
   const [currentView, setCurrentView] = useState<'channels' | 'dms'>('channels');
   const [directMessages, setDirectMessages] = useState<any[]>([]);
   const [selectedDM, setSelectedDM] = useState<string | null>(null);
@@ -117,6 +118,7 @@ const DashboardLayout = () => {
 
   const handleHomeClick = () => {
     setCurrentView('channels');
+    setCurrentMainView('channels');
     setSelectedDM(null);
     if (channels.length > 0) {
       setCurrentChannel(channels[0].id);
@@ -125,6 +127,7 @@ const DashboardLayout = () => {
 
   const handleDMClick = () => {
     setCurrentView('dms');
+    setCurrentMainView('dms');
     setCurrentChannel('');
   };
 
@@ -139,25 +142,9 @@ const DashboardLayout = () => {
   const handleLogout = () => {
     logout();
   };
-  
-  const handleThreadsClick = () => {
-    // Handle threads navigation
-    console.log('Threads clicked');
-  };
-
-  const handleSavedItemsClick = () => {
-    // Handle saved items navigation
-    console.log('Saved items clicked');
-  };
-
-  const handleLaterClick = () => {
-    // Handle later items navigation
-    console.log('Later clicked');
-  };
 
   const handleNotificationsClick = () => {
-    // Handle notifications/activity
-    console.log('Notifications clicked');
+    setCurrentMainView('activity');
   };
 
   const handleMainViewChange = (view: 'channels' | 'dms' | 'activity' | 'threads') => {
@@ -173,6 +160,10 @@ const DashboardLayout = () => {
     setShowDMModal(true);
   };
 
+  const handleAINotesClick = () => {
+    setShowAINotes(true);
+  };
+
   const currentMessages = currentView === 'dms' && selectedDM 
     ? (messages[selectedDM] || []).filter(msg => msg.channelId === selectedDM)
     : (messages[currentChannel] || []).filter(msg => msg.channelId === currentChannel);
@@ -185,49 +176,78 @@ const DashboardLayout = () => {
     return acc;
   }, {} as { [channelId: string]: string });
 
+  // Generate mock AI notes summary for the current channel/conversation
+  const generateAINotes = () => {
+    if (currentMessages.length === 0) {
+      return "No messages to summarize in this conversation.";
+    }
+    
+    return `# Meeting Summary for ${selectedChannel?.name || 'Direct Message'}
+
+## Key Discussion Points:
+- ${currentMessages.length} messages exchanged
+- Active participants: ${Array.from(new Set(currentMessages.map(msg => msg.username))).join(', ')}
+
+## Action Items:
+- Follow up on discussed topics
+- Review shared files and documents
+- Continue collaboration on ongoing projects
+
+## Meeting Notes:
+This conversation contained various topics and updates from team members. The discussion covered project updates, technical solutions, and collaborative work.
+
+Generated on: ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`;
+  };
+
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Navigation Sidebar - Left */}
-      <NavigationSidebar 
-        user={user}
-        onHomeClick={handleHomeClick}
-        onDMClick={() => handleMainViewChange('dms')}
-        onSearchClick={() => setShowSearch(true)}
-        onSettingsClick={() => setShowSettings(true)}
-        onEnhancedAIClick={() => setShowAIChat(true)}
-        onProfileClick={() => setShowProfile(true)}
-        onThreadsClick={() => handleMainViewChange('threads')}
-        onNotificationsClick={() => handleMainViewChange('activity')}
-      />
+      {/* Navigation Sidebar - Left (Fixed width) */}
+      <div className="flex-shrink-0">
+        <NavigationSidebar 
+          user={user}
+          onHomeClick={handleHomeClick}
+          onDMClick={() => handleMainViewChange('dms')}
+          onSearchClick={() => setShowSearch(true)}
+          onSettingsClick={() => setShowSettings(true)}
+          onEnhancedAIClick={() => setShowAIChat(true)}
+          onProfileClick={() => setShowProfile(true)}
+          onNotificationsClick={() => handleMainViewChange('activity')}
+          onAINotesClick={handleAINotesClick}
+        />
+      </div>
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Main Navigation Sidebar - Center Left */}
-        {(currentMainView === 'dms' || currentMainView === 'activity' || currentMainView === 'threads') ? (
-          <MainNavigationSidebar
-            user={user}
-            workspace={workspace}
-            currentView={currentMainView}
-            onViewChange={handleMainViewChange}
-            onUserSelect={setSelectedDM}
-            onBackClick={handleHomeClick}
-            selectedDM={selectedDM || ''}
-            onBrowseAllPeople={handleBrowseAllPeople}
-          />
+        {/* Main Navigation Sidebar - Center Left (Fixed width) */}
+        {(currentMainView === 'dms' || currentMainView === 'activity') ? (
+          <div className="flex-shrink-0">
+            <MainNavigationSidebar
+              user={user}
+              workspace={workspace}
+              currentView={currentMainView}
+              onViewChange={handleMainViewChange}
+              onUserSelect={setSelectedDM}
+              onBackClick={handleHomeClick}
+              selectedDM={selectedDM || ''}
+              onBrowseAllPeople={handleBrowseAllPeople}
+            />
+          </div>
         ) : (
-          <Sidebar 
-            user={user}
-            workspace={workspace}
-            currentChannel={currentChannel}
-            channels={channels}
-            onChannelSelect={handleChannelSelect}
-            onCreateChannel={() => setShowCreateChannel(true)}
-            onInviteTeammates={() => setShowInviteModal(true)}
-            onLogout={handleLogout}
-          />
+          <div className="flex-shrink-0">
+            <Sidebar 
+              user={user}
+              workspace={workspace}
+              currentChannel={currentChannel}
+              channels={channels}
+              onChannelSelect={handleChannelSelect}
+              onCreateChannel={() => setShowCreateChannel(true)}
+              onInviteTeammates={() => setShowInviteModal(true)}
+              onLogout={handleLogout}
+            />
+          </div>
         )}
 
-        {/* Chat Area */}
+        {/* Chat Area - Flexible */}
         <div className="flex-1 flex">
           <ChatArea 
             user={user}
@@ -274,7 +294,19 @@ const DashboardLayout = () => {
         </div>
       )}
 
-      {/* Modals */}
+      {/* AI Notes Modal */}
+      {showAINotes && (
+        <AINotesModal
+          isOpen={showAINotes}
+          onClose={() => setShowAINotes(false)}
+          notes={generateAINotes()}
+          title={`AI Notes - ${selectedChannel?.name || selectedDM || 'Current Conversation'}`}
+          messages={currentMessages}
+          channelName={selectedChannel?.name || ''}
+        />
+      )}
+
+      {/* Other Modals */}
       {showCreateChannel && (
         <CreateChannelModal
           isOpen={showCreateChannel}
@@ -318,6 +350,7 @@ const DashboardLayout = () => {
           onUserSelect={(userId: string) => {
             setSelectedDM(userId);
             setCurrentView('dms');
+            setCurrentMainView('dms');
             setShowDMModal(false);
           }}
         />

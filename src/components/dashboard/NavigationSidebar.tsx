@@ -10,8 +10,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Sparkles,
-  MessageCircle,
   Bell,
+  FileText,
   User
 } from 'lucide-react';
 import { User as UserType } from '@/contexts/AuthContext';
@@ -25,8 +25,8 @@ interface NavigationSidebarProps {
   onSettingsClick: () => void;
   onEnhancedAIClick: () => void;
   onProfileClick: () => void;
-  onThreadsClick?: () => void;
   onNotificationsClick?: () => void;
+  onAINotesClick?: () => void;
 }
 
 const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
@@ -37,8 +37,8 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   onSettingsClick,
   onEnhancedAIClick,
   onProfileClick,
-  onThreadsClick,
   onNotificationsClick,
+  onAINotesClick,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -62,16 +62,17 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       tooltip: 'Activity & Notifications'
     },
     {
-      icon: MessageCircle,
-      label: 'Threads',
-      onClick: onThreadsClick,
-      tooltip: 'Threads'
-    },
-    {
       icon: Search,
       label: 'Search',
       onClick: onSearchClick,
       tooltip: 'Search Messages'
+    },
+    {
+      icon: FileText,
+      label: 'AI Notes',
+      onClick: onAINotesClick,
+      tooltip: 'AI Meeting Notes',
+      special: true
     },
     {
       icon: Brain,
