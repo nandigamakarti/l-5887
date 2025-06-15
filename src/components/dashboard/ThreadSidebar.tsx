@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { X, Hash, Reply, MoreHorizontal, Notebook } from 'lucide-react';
+import { X, Hash, Reply, MoreHorizontal, Brain, FileDown, Clock, Users } from 'lucide-react';
 import { useMessages } from '@/contexts/MessageContext';
 import MessageBubble from './MessageBubble';
 import ThreadMessageInput from './ThreadMessageInput';
@@ -36,20 +36,25 @@ const ThreadSidebar: React.FC = () => {
 
   if (!parentMessage) return null;
 
+  const replyCount = parentMessage.replies?.length || 0;
+
   return (
-    <div className="w-full h-full bg-chat-dark border-l border-gray-700 flex flex-col thread-sidebar">
-      {/* Thread Header */}
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
-        <div className="flex items-center">
-          <div className="text-white font-medium flex items-center">
+    <div className="w-full h-full bg-gradient-to-b from-gray-800 to-gray-900 border-l border-gray-700/50 flex flex-col thread-sidebar shadow-2xl">
+      {/* Enhanced Thread Header */}
+      <div className="p-6 border-b border-gray-700/50 flex items-center justify-between bg-gradient-to-r from-gray-800 to-gray-900 shadow-lg">
+        <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 text-white font-semibold">
+            <Hash className="w-4 h-4 text-blue-400" />
             <span>{selectedThread.channelId}</span>
           </div>
-          <div className="mx-2 text-gray-500">&gt;</div>
-          <div className="text-white font-medium flex items-center">
-            <span>{parentMessage.username}</span>
+          <div className="text-gray-400">&gt;</div>
+          <div className="flex items-center space-x-2 text-white font-medium">
+            <Reply className="w-4 h-4 text-green-400" />
+            <span>Thread with {parentMessage.username}</span>
           </div>
         </div>
         <div className="flex items-center space-x-2">
+          {/* Enhanced AI Notes Button */}
           <Button
             variant="ghost"
             size="sm"
@@ -58,20 +63,34 @@ const ThreadSidebar: React.FC = () => {
               const threadMessages = [parentMessage, ...(parentMessage.replies || [])];
               downloadMeetingNotes(threadMessages, `Thread in ${selectedThread.channelId}`);
             }}
-            className="h-8 p-1 text-gray-400 hover:text-white hover:bg-gray-700 flex items-center gap-1"
-            title="Generate Meeting Notes"
+            className="h-9 px-4 text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 flex items-center gap-2 border border-blue-500/30 rounded-lg transition-all duration-200"
+            title="Generate AI Meeting Notes"
           >
-            <Notebook className="w-4 h-4" />
-            <span className="text-xs">AI Notes</span>
+            <Brain className="w-4 h-4" />
+            <span className="text-sm font-medium">AI Notes</span>
           </Button>
           <Button
             variant="ghost"
             size="sm"
             onClick={() => setSelectedThread(null)}
-            className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700"
+            className="h-8 w-8 p-0 text-gray-400 hover:text-white hover:bg-gray-700/50 rounded-lg"
           >
             <X className="w-4 h-4" />
           </Button>
+        </div>
+      </div>
+
+      {/* Thread Stats */}
+      <div className="px-6 py-3 bg-gray-800/30 border-b border-gray-700/30 flex items-center justify-between">
+        <div className="flex items-center space-x-4 text-sm text-gray-400">
+          <div className="flex items-center space-x-1">
+            <Reply className="w-4 h-4" />
+            <span>{replyCount} {replyCount === 1 ? 'reply' : 'replies'}</span>
+          </div>
+          <div className="flex items-center space-x-1">
+            <Clock className="w-4 h-4" />
+            <span>Started {new Date(parentMessage.timestamp).toLocaleDateString()}</span>
+          </div>
         </div>
       </div>
 
@@ -79,31 +98,48 @@ const ThreadSidebar: React.FC = () => {
       <div className="flex-1 overflow-hidden w-full">
         <div className="h-full overflow-y-auto scrollbar-thin scrollbar-thumb-gray-600 scrollbar-track-transparent w-full">
           {/* Parent Message */}
-          <div className="border-b border-gray-700 p-4 bg-chat-dark w-full">
+          <div className="border-b border-gray-700/50 p-6 bg-gradient-to-r from-gray-800/30 to-gray-900/30 w-full">
+            <div className="mb-2 text-xs text-gray-400 flex items-center gap-1">
+              <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+              Original Message
+            </div>
             <MessageBubble message={parentMessage} showAvatar={true} isInThread={true} />
           </div>
           
           {/* Replies */}
-          <div className="p-4 bg-chat-dark w-full">
-            <div className="space-y-3 w-full">
-              {parentMessage.replies && parentMessage.replies.map((reply) => (
-                <div key={reply.id} className="w-full">
-                  <MessageBubble
-                    message={reply}
-                    showAvatar={true}
-                    isGrouped={false}
-                    isInThread={true}
-                  />
+          <div className="p-6 bg-gradient-to-b from-gray-800 to-gray-900 w-full">
+            {replyCount > 0 ? (
+              <div className="space-y-4 w-full">
+                <div className="text-sm text-gray-400 flex items-center gap-2 mb-4">
+                  <div className="h-px bg-gray-600 flex-1"></div>
+                  <span>{replyCount} {replyCount === 1 ? 'Reply' : 'Replies'}</span>
+                  <div className="h-px bg-gray-600 flex-1"></div>
                 </div>
-              ))}
-            </div>
+                {parentMessage.replies && parentMessage.replies.map((reply) => (
+                  <div key={reply.id} className="w-full">
+                    <MessageBubble
+                      message={reply}
+                      showAvatar={true}
+                      isGrouped={false}
+                      isInThread={true}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8">
+                <Reply className="w-12 h-12 text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-400">No replies yet</p>
+                <p className="text-sm text-gray-500 mt-1">Be the first to respond!</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Thread Input */}
-      <div className="p-2 border-t border-gray-700 bg-chat-dark shadow-inner">
-        <div className="border border-gray-600 rounded-md bg-gray-700 shadow-inner">
+      {/* Enhanced Thread Input */}
+      <div className="p-4 border-t border-gray-700/50 bg-gradient-to-r from-gray-800 to-gray-900 shadow-inner">
+        <div className="border border-gray-600/50 rounded-xl bg-gray-700/50 shadow-inner backdrop-blur-sm">
           <ThreadMessageInput
             channelId={selectedThread.channelId}
             placeholder={`Reply to ${parentMessage.username}...`}

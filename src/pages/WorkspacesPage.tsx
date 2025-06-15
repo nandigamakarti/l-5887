@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Plus, Users, LogOut, X } from 'lucide-react';
+import { Plus, Users, LogOut, X, Briefcase, Star, Clock, Shield } from 'lucide-react';
 import { initializeTest01Workspace } from '@/data/test01-workspace';
+import { motion } from 'framer-motion';
 
 interface MockWorkspace {
   id: string;
@@ -24,13 +25,13 @@ const WorkspacesPage: React.FC = () => {
   const [joinWorkspaceUrl, setJoinWorkspaceUrl] = useState('');
   const [showJoinForm, setShowJoinForm] = useState(false);
   const [showCreateWorkspace, setShowCreateWorkspace] = useState(false);
+  const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
   const [createWorkspaceData, setCreateWorkspaceData] = useState({
     name: '',
     description: '',
     slug: ''
   });
 
-  // Initialize workspaces from localStorage or use default mock data
   // Initialize Test01 workspace data when component mounts
   useEffect(() => {
     // Initialize Test01 workspace data with channels and participants
@@ -215,23 +216,29 @@ const WorkspacesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slack-aubergine via-purple-700 to-slack-dark-aubergine">
-      {/* Simplified Header - Only Logo/Name */}
-      <header className="bg-black/20 backdrop-blur-sm border-b border-white/10">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-800">
+      {/* Enhanced Header */}
+      <header className="bg-black/30 backdrop-blur-md border-b border-white/10 shadow-2xl">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center">
-                <span className="text-slack-aubergine font-bold text-lg">S</span>
+          <div className="flex justify-between items-center h-20">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center space-x-3"
+            >
+              <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                <span className="text-white font-bold text-xl">S</span>
               </div>
-              <span className="text-white font-bold text-xl">slack</span>
-              <span className="text-white/60 text-sm">from Salesforce</span>
-            </div>
+              <div>
+                <span className="text-white font-bold text-2xl">SlackAI</span>
+                <p className="text-white/60 text-sm">from Salesforce</p>
+              </div>
+            </motion.div>
 
             <Button
               variant="ghost"
               onClick={logout}
-              className="text-white/80 hover:text-white hover:bg-white/10"
+              className="text-white/80 hover:text-white hover:bg-white/10 px-6 py-3 rounded-xl transition-all duration-200"
             >
               <LogOut className="w-4 h-4 mr-2" />
               Sign Out
@@ -241,119 +248,175 @@ const WorkspacesPage: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto px-4 py-12">
-        <div className="text-center mb-12">
-          <div className="flex items-center justify-center mb-6">
-            <span className="text-6xl mr-4">👋</span>
-            <h1 className="text-5xl font-bold text-white">Welcome back</h1>
+      <main className="max-w-6xl mx-auto px-4 py-16">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-16"
+        >
+          <div className="flex items-center justify-center mb-8">
+            <span className="text-7xl mr-6">👋</span>
+            <div>
+              <h1 className="text-6xl font-bold text-white mb-2">Welcome back</h1>
+              <p className="text-xl text-white/70">Choose your workspace to continue</p>
+            </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* User Workspaces Section */}
-        <div className="mb-12">
-          <div className="bg-white/95 backdrop-blur-sm rounded-lg p-8 shadow-xl">
-            <h2 className="text-xl font-semibold text-slack-text-primary mb-6">
-              Workspaces for {user?.email}
-            </h2>
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-16"
+        >
+          <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-white/20">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h2 className="text-2xl font-bold text-slate-900 mb-2">
+                  Your Workspaces
+                </h2>
+                <p className="text-slate-600">for {user?.email}</p>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Briefcase className="w-5 h-5 text-slate-500" />
+                <span className="text-sm text-slate-500">{userWorkspaces.length} workspace{userWorkspaces.length !== 1 ? 's' : ''}</span>
+              </div>
+            </div>
             
-            <div className="space-y-4">
-              {userWorkspaces.map((workspace) => (
-                <div key={workspace.id} className="flex items-center justify-between p-4 border border-slack-border rounded-lg hover:bg-gray-50 transition-colors">
-                  <div className="flex items-center space-x-4">
-                    <div className="w-12 h-12 bg-slack-aubergine rounded-lg flex items-center justify-center text-white text-xl">
-                      {workspace.avatar}
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-slack-text-primary">{workspace.name}</h3>
-                      <div className="flex items-center text-sm text-slack-text-secondary">
-                        <Users className="w-4 h-4 mr-1" />
-                        {workspace.memberCount} members
-                        {workspace.isOwner && (
-                          <span className="ml-2 px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
-                            Owner
-                          </span>
-                        )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {userWorkspaces.map((workspace, index) => (
+                <motion.div
+                  key={workspace.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 * index }}
+                  onClick={() => setSelectedWorkspace(workspace.id)}
+                  className={`group relative p-6 border-2 rounded-xl transition-all duration-300 cursor-pointer ${
+                    selectedWorkspace === workspace.id
+                      ? 'border-purple-500 bg-purple-50 shadow-lg shadow-purple-200'
+                      : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center space-x-4">
+                      <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-xl flex items-center justify-center text-white text-2xl shadow-lg">
+                        {workspace.avatar}
                       </div>
-                      <div className="text-xs text-slack-text-secondary mt-1">
-                        {workspace.url}
+                      <div>
+                        <h3 className="text-xl font-bold text-slate-900 group-hover:text-purple-700 transition-colors">
+                          {workspace.name}
+                        </h3>
+                        <div className="flex items-center space-x-3 text-sm text-slate-600 mt-1">
+                          <div className="flex items-center">
+                            <Users className="w-4 h-4 mr-1" />
+                            {workspace.memberCount} members
+                          </div>
+                          {workspace.isOwner && (
+                            <div className="flex items-center">
+                              <Shield className="w-4 h-4 mr-1 text-amber-500" />
+                              <span className="text-amber-600 font-medium">Owner</span>
+                            </div>
+                          )}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-2 flex items-center">
+                          <Clock className="w-3 h-3 mr-1" />
+                          {workspace.url}
+                        </div>
                       </div>
                     </div>
+                    {selectedWorkspace === workspace.id && (
+                      <div className="absolute top-4 right-4">
+                        <Star className="w-5 h-5 text-purple-500 fill-current" />
+                      </div>
+                    )}
                   </div>
                   <Button
-                    onClick={() => handleLaunchWorkspace(workspace.id)}
-                    className="bg-slack-aubergine hover:bg-slack-aubergine/90 text-white"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleLaunchWorkspace(workspace.id);
+                    }}
+                    className="w-full bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white font-semibold py-3 rounded-lg transition-all duration-200 shadow-lg"
                   >
-                    LAUNCH SLACK
+                    LAUNCH WORKSPACE
                   </Button>
-                </div>
+                </motion.div>
               ))}
             </div>
           </div>
-        </div>
+        </motion.div>
 
         {/* Create New Workspace Section */}
-        <div className="mb-8">
-          <Card className="bg-gradient-to-r from-orange-100 to-pink-100 border-0">
-            <CardContent className="p-6">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-12"
+        >
+          <Card className="bg-gradient-to-r from-orange-50 to-pink-50 border-orange-200 shadow-xl">
+            <CardContent className="p-8">
               <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-400 to-pink-400 rounded-lg flex items-center justify-center">
-                    <span className="text-2xl">👩‍💻</span>
+                <div className="flex items-center space-x-6">
+                  <div className="w-20 h-20 bg-gradient-to-br from-orange-400 to-pink-500 rounded-2xl flex items-center justify-center shadow-lg">
+                    <span className="text-3xl">👩‍💻</span>
                   </div>
                   <div>
-                    <h3 className="font-semibold text-slack-text-primary text-lg">
-                      Want to use Slack with a different team?
+                    <h3 className="text-2xl font-bold text-slate-900 mb-2">
+                      Ready to start fresh?
                     </h3>
+                    <p className="text-slate-700">Create a new workspace for your team or project</p>
                   </div>
                 </div>
                 <Button
                   onClick={() => setShowCreateWorkspace(true)}
                   variant="outline"
-                  className="border-slack-aubergine text-slack-aubergine hover:bg-slack-aubergine hover:text-white"
+                  className="border-2 border-purple-500 text-purple-600 hover:bg-purple-500 hover:text-white px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-200"
                 >
-                  CREATE A NEW WORKSPACE
+                  <Plus className="w-5 h-5 mr-2" />
+                  CREATE WORKSPACE
                 </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
+        </motion.div>
 
         {/* Join Workspace Section */}
-        <div className="text-center">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="text-center"
+        >
           {!showJoinForm ? (
-            <div>
-              <p className="text-white/80 mb-4">
-                Not seeing your workspace?{' '}
-                <button 
-                  onClick={() => setShowJoinForm(true)}
-                  className="text-blue-300 hover:text-blue-200 underline"
-                >
-                  Try using a different email address →
-                </button>
+            <div className="space-y-6">
+              <p className="text-white/80 text-lg">
+                Looking for a different workspace?{' '}
               </p>
-              <Button
-                onClick={() => setShowJoinForm(true)}
-                variant="ghost"
-                className="text-white/80 hover:text-white hover:bg-white/10"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Join a workspace
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button
+                  onClick={() => setShowJoinForm(true)}
+                  variant="ghost"
+                  className="text-white/80 hover:text-white hover:bg-white/10 px-8 py-4 rounded-xl border border-white/20 transition-all duration-200"
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Join existing workspace
+                </Button>
+              </div>
             </div>
           ) : (
-            <div className="bg-white/95 backdrop-blur-sm rounded-lg p-6 max-w-md mx-auto">
-              <h3 className="font-semibold text-slack-text-primary mb-4">Join a workspace</h3>
+            <div className="bg-white/95 backdrop-blur-sm rounded-2xl p-8 max-w-md mx-auto shadow-2xl">
+              <h3 className="text-2xl font-bold text-slate-900 mb-6">Join a workspace</h3>
               <div className="space-y-4">
                 <Input
                   placeholder="Enter workspace URL, code, or invite link"
                   value={joinWorkspaceUrl}
                   onChange={(e) => setJoinWorkspaceUrl(e.target.value)}
-                  className="text-15 bg-chat-dark border-gray-400 text-white placeholder:text-gray-400"
+                  className="h-12 text-lg bg-white border-2 border-slate-300 focus:border-purple-500 rounded-xl"
                 />
-                <div className="flex space-x-2">
+                <div className="flex space-x-3">
                   <Button
                     onClick={handleJoinWorkspace}
-                    className="bg-slack-aubergine hover:bg-slack-aubergine/90 text-white flex-1"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white flex-1 h-12 text-lg font-semibold rounded-xl"
                     disabled={!joinWorkspaceUrl.trim()}
                   >
                     Join Workspace
@@ -364,7 +427,7 @@ const WorkspacesPage: React.FC = () => {
                       setJoinWorkspaceUrl('');
                     }}
                     variant="outline"
-                    className="border-slack text-slack-text-secondary"
+                    className="border-2 border-slate-300 text-slate-600 hover:bg-slate-100 h-12 px-6 rounded-xl"
                   >
                     Cancel
                   </Button>
@@ -372,59 +435,60 @@ const WorkspacesPage: React.FC = () => {
               </div>
             </div>
           )}
-        </div>
+        </motion.div>
       </main>
 
       {/* Create Workspace Modal */}
       <Dialog open={showCreateWorkspace} onOpenChange={setShowCreateWorkspace}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg bg-white rounded-2xl">
           <DialogHeader>
-            <DialogTitle>Create a new workspace</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-slate-900">Create a new workspace</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-6 p-2">
             <div>
-              <label className="block text-sm font-medium mb-2">Workspace name</label>
+              <label className="block text-sm font-semibold mb-3 text-slate-700">Workspace name</label>
               <Input
                 placeholder="e.g. My Company"
                 value={createWorkspaceData.name}
                 onChange={(e) => setCreateWorkspaceData(prev => ({ ...prev, name: e.target.value }))}
-                className="bg-chat-dark border-gray-400 text-white placeholder:text-gray-400"
+                className="h-12 text-lg bg-white border-2 border-slate-300 focus:border-purple-500 rounded-xl"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Description (optional)</label>
+              <label className="block text-sm font-semibold mb-3 text-slate-700">Description (optional)</label>
               <Input
                 placeholder="What's this workspace for?"
                 value={createWorkspaceData.description}
                 onChange={(e) => setCreateWorkspaceData(prev => ({ ...prev, description: e.target.value }))}
-                className="bg-chat-dark border-gray-400 text-white placeholder:text-gray-400"
+                className="h-12 text-lg bg-white border-2 border-slate-300 focus:border-purple-500 rounded-xl"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-2">Workspace URL</label>
+              <label className="block text-sm font-semibold mb-3 text-slate-700">Workspace URL</label>
               <div className="flex items-center">
                 <Input
                   placeholder="my-company"
                   value={createWorkspaceData.slug}
                   onChange={(e) => setCreateWorkspaceData(prev => ({ ...prev, slug: e.target.value }))}
-                  className="rounded-r-none bg-chat-dark border-gray-400 text-white placeholder:text-gray-400"
+                  className="rounded-r-none h-12 text-lg bg-white border-2 border-slate-300 focus:border-purple-500"
                 />
-                <span className="bg-gray-100 border border-l-0 px-3 py-2 text-sm text-gray-600 rounded-r-md">
+                <span className="bg-slate-100 border-2 border-l-0 border-slate-300 px-4 py-3 text-lg text-slate-600 rounded-r-xl h-12 flex items-center">
                   .slack.com
                 </span>
               </div>
             </div>
-            <div className="flex space-x-2 pt-4">
+            <div className="flex space-x-3 pt-4">
               <Button
                 onClick={handleCreateWorkspace}
                 disabled={!createWorkspaceData.name.trim()}
-                className="flex-1"
+                className="flex-1 h-12 text-lg font-semibold bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-xl"
               >
                 Create Workspace
               </Button>
               <Button
                 variant="outline"
                 onClick={() => setShowCreateWorkspace(false)}
+                className="h-12 px-6 border-2 border-slate-300 text-slate-600 hover:bg-slate-100 rounded-xl"
               >
                 Cancel
               </Button>

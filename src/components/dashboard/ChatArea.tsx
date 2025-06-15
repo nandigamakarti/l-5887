@@ -11,8 +11,10 @@ import {
   Info, 
   Search,
   X,
-  Notebook,
-  FileDown
+  Brain,
+  FileDown,
+  Settings,
+  MoreVertical
 } from 'lucide-react';
 import { downloadMeetingNotes } from '@/utils/meetingNotesGenerator';
 import { User } from '@/contexts/AuthContext';
@@ -136,80 +138,100 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
     : channelMessages;
 
   return (
-    <div className="flex flex-col h-full w-full bg-chat-dark min-w-0">
-      {/* Chat Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-700 bg-chat-dark flex-shrink-0">
-        <div className="flex items-center space-x-3 min-w-0">
-          <div className="text-gray-300 flex-shrink-0">
+    <div className="flex flex-col h-full w-full bg-gradient-to-b from-gray-900 to-gray-800 min-w-0">
+      {/* Enhanced Chat Header */}
+      <div className="flex items-center justify-between p-6 border-b border-gray-700/50 bg-gradient-to-r from-gray-800 to-gray-900 flex-shrink-0 shadow-lg">
+        <div className="flex items-center space-x-4 min-w-0">
+          <div className="text-gray-300 flex-shrink-0 p-2 bg-gray-700/50 rounded-lg">
             {getChannelIcon()}
           </div>
           <div className="min-w-0">
-            <h2 className="font-bold text-lg text-white truncate">
+            <h2 className="font-bold text-xl text-white truncate flex items-center gap-2">
               {getChannelName()}
+              {isFavorite && <Star className="w-4 h-4 text-yellow-400 fill-current" />}
             </h2>
             {!channel.startsWith('dm-') && (
               <div>
                 {/* Show channel description if available */}
                 {channels.find(c => c.id === channel)?.description && (
-                  <p className="text-sm text-gray-300 truncate">
+                  <p className="text-sm text-gray-300 truncate mt-1">
                     {channels.find(c => c.id === channel)?.description}
                   </p>
                 )}
-                {/* Removed members count */}
               </div>
             )}
           </div>
         </div>
         
+        {/* Reorganized Header Buttons */}
         <div className="flex items-center space-x-2 flex-shrink-0">
-          <Button 
-            variant="ghost" 
-            size="sm" 
-            onClick={handleStarClick}
-            className={`hover:text-gray-200 hover:bg-gray-700 ${
-              isFavorite ? 'text-yellow-400' : 'text-gray-400'
-            }`}
-          >
-            <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
-          </Button>
-          {/* Removed phone and video call icons */}
-          <Button variant="ghost" size="sm" className="text-gray-400 hover:text-gray-200 hover:bg-gray-700">
-            <Info className="w-4 h-4" />
-          </Button>
+          {/* AI Notes Button - Moved to prominent position */}
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={() => downloadMeetingNotes(channelMessages, getChannelName())}
-            className="text-gray-400 hover:text-gray-200 hover:bg-gray-700 flex items-center gap-1"
-            title="Generate Meeting Notes"
+            className="text-blue-400 hover:text-blue-300 hover:bg-blue-900/30 flex items-center gap-2 px-4 py-2 rounded-lg border border-blue-500/30 transition-all duration-200"
+            title="Generate AI Meeting Notes"
           >
-            <Notebook className="w-4 h-4" />
-            <span className="text-xs">AI Notes</span>
+            <Brain className="w-4 h-4" />
+            <span className="text-sm font-medium">AI Notes</span>
           </Button>
+          
+          {/* Star Button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleStarClick}
+            className={`hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-200 ${
+              isFavorite ? 'text-yellow-400 bg-yellow-900/20' : 'text-gray-400 hover:text-yellow-400'
+            }`}
+          >
+            <Star className={`w-4 h-4 ${isFavorite ? 'fill-current' : ''}`} />
+          </Button>
+          
+          {/* Search Button */}
           <Button 
             variant="ghost" 
             size="sm" 
             onClick={handleSearchClick}
-            className={`hover:text-gray-200 hover:bg-gray-700 ${
-              showSearch ? 'text-white bg-gray-700' : 'text-gray-400'
+            className={`hover:bg-gray-700/50 p-2 rounded-lg transition-all duration-200 ${
+              showSearch ? 'text-white bg-gray-700' : 'text-gray-400 hover:text-white'
             }`}
           >
             <Search className="w-4 h-4" />
           </Button>
+          
+          {/* Info Button */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 p-2 rounded-lg"
+          >
+            <Info className="w-4 h-4" />
+          </Button>
+          
+          {/* More Options */}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className="text-gray-400 hover:text-gray-200 hover:bg-gray-700/50 p-2 rounded-lg"
+          >
+            <MoreVertical className="w-4 h-4" />
+          </Button>
         </div>
       </div>
 
-      {/* Search Bar (if active) */}
+      {/* Enhanced Search Bar */}
       {showSearch && (
-        <div className="p-4 border-b border-gray-700 bg-chat-dark">
+        <div className="p-4 border-b border-gray-700/50 bg-gradient-to-r from-gray-800/50 to-gray-900/50">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
             <Input
               type="text"
               placeholder={`Search in ${getChannelName()}...`}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="pl-12 bg-gray-700/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 h-12"
               autoFocus
             />
             {searchQuery && (
@@ -217,14 +239,14 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
                 variant="ghost"
                 size="sm"
                 onClick={() => setSearchQuery('')}
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 h-6 w-6 p-0 text-gray-400 hover:text-white"
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 h-8 w-8 p-0 text-gray-400 hover:text-white rounded-full"
               >
-                <X className="w-3 h-3" />
+                <X className="w-4 h-4" />
               </Button>
             )}
           </div>
           {searchQuery && (
-            <p className="text-xs text-gray-400 mt-2">
+            <p className="text-xs text-gray-400 mt-3 ml-1">
               {filteredMessages.length} result{filteredMessages.length !== 1 ? 's' : ''} found
             </p>
           )}
@@ -234,29 +256,29 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {filteredMessages.length === 0 ? (
-          <div className="text-center py-8 px-4">
-            <div className="w-16 h-16 bg-gray-700 rounded-lg flex items-center justify-center mx-auto mb-4">
+          <div className="text-center py-12 px-6">
+            <div className="w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-800 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
               <div className="text-gray-400">
-                {searchQuery ? <Search className="w-6 h-6" /> : getChannelIcon()}
+                {searchQuery ? <Search className="w-8 h-8" /> : getChannelIcon()}
               </div>
             </div>
-            <h3 className="text-xl font-bold text-white mb-2">
+            <h3 className="text-2xl font-bold text-white mb-3">
               {searchQuery 
                 ? 'No messages found' 
-                : `This is the very beginning of ${getChannelName()}`
+                : `Welcome to ${getChannelName()}`
               }
             </h3>
-            <p className="text-gray-400">
+            <p className="text-gray-400 text-lg">
               {searchQuery 
                 ? `No messages match "${searchQuery}" in this channel.`
                 : channel.startsWith('dm-') 
                   ? 'This is the start of your conversation.'
-                  : 'This channel is for workspace-wide communication and announcements.'
+                  : 'This is the beginning of your channel conversation.'
               }
             </p>
           </div>
         ) : (
-          <div className="pb-4">
+          <div className="pb-6">
             {filteredMessages.map((message, index) => (
               <MessageBubble
                 key={message.id}
@@ -270,9 +292,9 @@ const ChatArea: React.FC<ChatAreaProps> = ({ channel, user, channels = [] }) => 
         )}
       </div>
 
-      {/* Message Input */}
-      <div className="p-4 border-t border-gray-700 bg-chat-dark flex-shrink-0">
-        <div className="border border-gray-600 rounded-md bg-gray-700 shadow-inner">
+      {/* Enhanced Message Input */}
+      <div className="p-6 border-t border-gray-700/50 bg-gradient-to-r from-gray-800 to-gray-900 flex-shrink-0 shadow-inner">
+        <div className="border border-gray-600/50 rounded-xl bg-gray-700/50 shadow-inner backdrop-blur-sm">
           <MessageInput
             channelId={channel}
             placeholder={`Message ${channel.startsWith('dm-') ? getChannelName() : `#${getChannelName()}`}`}

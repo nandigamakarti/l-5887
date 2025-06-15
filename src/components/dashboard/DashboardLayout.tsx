@@ -138,41 +138,48 @@ const DashboardContent: React.FC = () => {
   };
 
   return (
-    <div className="flex h-screen bg-chat-dark overflow-hidden">
-      <NavigationSidebar 
-        onHomeClick={handleHomeClick}
-        onDMClick={handleDMClick}
-        onSearchClick={handleSearchClick}
-        onSettingsClick={handleSettingsClick}
-        onEnhancedAIClick={handleEnhancedAIClick}
-      />
-      
-      {showDMSidebar ? (
-        <DMSidebar
-          user={user}
-          workspace={workspace}
-          selectedDM={selectedChannel}
-          onUserSelect={handleUserSelect}
-          onBackClick={handleBackToBrowse}
+    <div className="flex h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 overflow-hidden">
+      {/* Enhanced Navigation Sidebar with gradient background */}
+      <div className="bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700/50 shadow-2xl">
+        <NavigationSidebar 
+          onHomeClick={handleHomeClick}
+          onDMClick={handleDMClick}
+          onSearchClick={handleSearchClick}
+          onSettingsClick={handleSettingsClick}
+          onEnhancedAIClick={handleEnhancedAIClick}
         />
-      ) : (
-        <Sidebar 
-          user={user}
-          workspace={workspace}
-          currentChannel={selectedChannel}
-          channels={channels}
-          onChannelSelect={setSelectedChannel}
-          onProfileClick={() => setShowUserProfile(true)}
-          onCreateChannel={() => setShowCreateChannel(true)}
-          onInviteTeammates={handleInviteTeammates}
-          onLogout={handleLogout}
-        />
-      )}
+      </div>
       
-      <div className="flex flex-1 relative">
+      {/* Main Sidebar with enhanced styling */}
+      <div className="bg-gradient-to-b from-slate-800 to-slate-900 border-r border-slate-700/50 shadow-xl">
+        {showDMSidebar ? (
+          <DMSidebar
+            user={user}
+            workspace={workspace}
+            selectedDM={selectedChannel}
+            onUserSelect={handleUserSelect}
+            onBackClick={handleBackToBrowse}
+          />
+        ) : (
+          <Sidebar 
+            user={user}
+            workspace={workspace}
+            currentChannel={selectedChannel}
+            channels={channels}
+            onChannelSelect={setSelectedChannel}
+            onProfileClick={() => setShowUserProfile(true)}
+            onCreateChannel={() => setShowCreateChannel(true)}
+            onInviteTeammates={handleInviteTeammates}
+            onLogout={handleLogout}
+          />
+        )}
+      </div>
+      
+      {/* Main Content Area with enhanced gradient */}
+      <div className="flex flex-1 relative bg-gradient-to-br from-gray-900 to-gray-800">
         <div 
           className={`flex-1 transition-all duration-300 ease-in-out ${
-            selectedThread ? 'mr-[400px]' : ''
+            selectedThread ? 'mr-[420px]' : ''
           }`}
         >
           <ChatArea 
@@ -182,13 +189,15 @@ const DashboardContent: React.FC = () => {
           />
         </div>
         
+        {/* Thread Sidebar with enhanced positioning */}
         {selectedThread && (
-          <div className="absolute right-0 top-0 h-full w-[400px] transition-all duration-300 ease-in-out">
+          <div className="absolute right-0 top-0 h-full w-[420px] transition-all duration-300 ease-in-out bg-gradient-to-b from-gray-800 to-gray-900 border-l border-gray-700/50 shadow-2xl">
             <ThreadSidebar />
           </div>
         )}
       </div>
 
+      {/* Modals and Overlays */}
       {showUserProfile && (
         <UserProfile 
           user={user}
@@ -220,6 +229,7 @@ const DashboardContent: React.FC = () => {
           acc[channel.id] = channel.name;
           return acc;
         }, {} as { [channelId: string]: string })}
+        currentChannelId={selectedChannel}
       />
     </div>
   );
