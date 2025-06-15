@@ -104,12 +104,12 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
     }`}>
       {/* Logo Section */}
       <div className="p-4 border-b border-slate-700/50 flex items-center justify-center">
-        <div className={`flex items-center space-x-2 ${isCollapsed ? 'justify-center' : ''}`}>
+        <div className={`flex flex-col items-center space-y-1 ${isCollapsed ? 'justify-center' : ''}`}>
           <div className="w-8 h-8 bg-gradient-to-br from-purple-600 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
             <Sparkles className="w-5 h-5 text-white" />
           </div>
           {!isCollapsed && (
-            <span className="text-sm font-bold text-white hidden lg:block">AI</span>
+            <span className="text-xs font-bold text-white">Slack</span>
           )}
         </div>
       </div>
@@ -122,14 +122,12 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
             <div key={index} className="relative group">
               <Button
                 variant="ghost"
-                size={isCollapsed ? "icon" : "sm"}
+                size="sm"
                 onClick={item.onClick}
-                className={`w-full h-12 relative transition-all duration-200 hover:bg-slate-700/50 hover:scale-105 ${
+                className={`w-full h-12 relative transition-all duration-200 hover:bg-slate-700/50 hover:scale-105 flex flex-col items-center justify-center p-2 ${
                   item.special 
                     ? 'bg-gradient-to-r from-purple-600/20 to-blue-600/20 border border-purple-500/30 hover:from-purple-600/30 hover:to-blue-600/30' 
                     : 'hover:bg-slate-700/30'
-                } ${
-                  isCollapsed ? 'justify-center px-0' : 'justify-center lg:justify-start'
                 }`}
                 title={isCollapsed ? item.tooltip : undefined}
               >
@@ -137,7 +135,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
                   item.special ? 'text-purple-400' : 'text-slate-300'
                 }`} />
                 {!isCollapsed && (
-                  <span className={`ml-2 text-sm hidden lg:block ${
+                  <span className={`text-xs mt-1 ${
                     item.special ? 'text-purple-300' : 'text-slate-300'
                   }`}>
                     {item.label}
@@ -164,11 +162,9 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
         <div className="relative group">
           <Button
             variant="ghost"
-            size={isCollapsed ? "icon" : "sm"}
+            size="sm"
             onClick={onProfileClick}
-            className={`w-full h-12 transition-all duration-200 hover:bg-slate-700/50 hover:scale-105 ${
-              isCollapsed ? 'justify-center px-0' : 'justify-center lg:justify-start'
-            }`}
+            className="w-full h-12 transition-all duration-200 hover:bg-slate-700/50 hover:scale-105 flex flex-col items-center justify-center p-2"
             title={isCollapsed ? 'Profile' : undefined}
           >
             <div className="relative">
@@ -180,7 +176,7 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
               <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${getPresenceColor(user?.presence || 'offline')} rounded-full border-2 border-slate-800`}></div>
             </div>
             {!isCollapsed && (
-              <span className="ml-2 text-sm text-slate-300 hidden lg:block truncate">
+              <span className="text-xs text-slate-300 mt-1 truncate max-w-full">
                 {user?.displayName || 'Profile'}
               </span>
             )}
