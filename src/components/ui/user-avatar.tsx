@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { getInitials, getAvatarStyle } from '@/utils/avatarUtils';
@@ -11,6 +12,7 @@ interface UserAvatarProps {
 
 /**
  * UserAvatar component that displays either an image or initials with a colored background
+ * Now renders as a square with rounded corners
  */
 export function UserAvatar({ name, size = 'md', className = '', imageUrl }: UserAvatarProps) {
   // Calculate size class
@@ -42,11 +44,11 @@ export function UserAvatar({ name, size = 'md', className = '', imageUrl }: User
   }, [size]);
 
   return (
-    <Avatar className={`${sizeClass} ${className}`}>
+    <Avatar className={`${sizeClass} ${className} rounded-lg`}>
       {imageUrl && (
-        <AvatarImage src={imageUrl} alt={name} />
+        <AvatarImage src={imageUrl} alt={name} className="rounded-lg" />
       )}
-      <AvatarFallback style={avatarStyle} className={textSizeClass}>
+      <AvatarFallback style={avatarStyle} className={`${textSizeClass} rounded-lg`}>
         {initials}
       </AvatarFallback>
     </Avatar>

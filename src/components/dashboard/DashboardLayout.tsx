@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMessages } from '@/contexts/MessageContext';
@@ -20,6 +19,7 @@ import { X } from 'lucide-react';
 
 const DashboardLayout = () => {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [currentMainView, setCurrentMainView] = useState<'channels' | 'dms' | 'activity' | 'threads'>('channels');
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -158,6 +158,19 @@ const DashboardLayout = () => {
     console.log('Notifications clicked');
   };
 
+  const handleMainViewChange = (view: 'channels' | 'dms' | 'activity' | 'threads') => {
+    setCurrentMainView(view);
+    if (view === 'dms') {
+      setCurrentView('dms');
+    } else if (view === 'channels') {
+      setCurrentView('channels');
+    }
+  };
+
+  const handleBrowseAllPeople = () => {
+    setShowDMModal(true);
+  };
+
   const currentMessages = currentView === 'dms' && selectedDM 
     ? (messages[selectedDM] || []).filter(msg => msg.channelId === selectedDM)
     : (messages[currentChannel] || []).filter(msg => msg.channelId === currentChannel);
@@ -172,25 +185,34 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Navigation Sidebar */}
+      {/* Navigation Sidebar - Left */}
       <NavigationSidebar 
         user={user}
         onHomeClick={handleHomeClick}
-        onDMClick={handleDMClick}
+        onDMClick={() => handleMainViewChange('dms')}
         onSearchClick={() => setShowSearch(true)}
         onSettingsClick={() => setShowSettings(true)}
         onEnhancedAIClick={() => setShowAIChat(true)}
         onProfileClick={() => setShowProfile(true)}
-        onThreadsClick={handleThreadsClick}
-        onSavedItemsClick={handleSavedItemsClick}
-        onLaterClick={handleLaterClick}
-        onNotificationsClick={handleNotificationsClick}
+        onThreadsClick={() => handleMainViewChange('threads')}
+        onNotificationsClick={() => handleMainViewChange('activity')}
       />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar */}
-        {currentView === 'channels' ? (
+        {/* Main Navigation Sidebar - Center Left */}
+        {(currentMainView === 'dms' || currentMainView === 'activity' || currentMainView === 'threads') ? (
+          <MainNavigationSidebar
+            user={user}
+            workspace={workspace}
+            currentView={currentMainView}
+            onViewChange={handleMainViewChange}
+            onUserSelect={setSelectedDM}
+            onBackClick={handleHomeClick}
+            selectedDM={selectedDM || ''}
+            onBrowseAllPeople={handleBrowseAllPeople}
+          />
+        ) : (
           <Sidebar 
             user={user}
             workspace={workspace}
@@ -200,14 +222,6 @@ const DashboardLayout = () => {
             onCreateChannel={() => setShowCreateChannel(true)}
             onInviteTeammates={() => setShowInviteModal(true)}
             onLogout={handleLogout}
-          />
-        ) : (
-          <DMSidebar 
-            user={user}
-            workspace={workspace}
-            onUserSelect={setSelectedDM}
-            onBackClick={handleHomeClick}
-            selectedDM={selectedDM || ''}
           />
         )}
 

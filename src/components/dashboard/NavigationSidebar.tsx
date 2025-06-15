@@ -11,8 +11,6 @@ import {
   ChevronRight,
   Sparkles,
   MessageCircle,
-  Star,
-  Zap,
   Bell,
   User
 } from 'lucide-react';
@@ -28,8 +26,6 @@ interface NavigationSidebarProps {
   onEnhancedAIClick: () => void;
   onProfileClick: () => void;
   onThreadsClick?: () => void;
-  onSavedItemsClick?: () => void;
-  onLaterClick?: () => void;
   onNotificationsClick?: () => void;
 }
 
@@ -42,8 +38,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
   onEnhancedAIClick,
   onProfileClick,
   onThreadsClick,
-  onSavedItemsClick,
-  onLaterClick,
   onNotificationsClick,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -72,18 +66,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       label: 'Threads',
       onClick: onThreadsClick,
       tooltip: 'Threads'
-    },
-    {
-      icon: Star,
-      label: 'Saved',
-      onClick: onSavedItemsClick,
-      tooltip: 'Saved Items'
-    },
-    {
-      icon: Zap,
-      label: 'Later',
-      onClick: onLaterClick,
-      tooltip: 'Later'
     },
     {
       icon: Search,
