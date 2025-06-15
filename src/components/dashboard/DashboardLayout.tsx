@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMessages } from '@/contexts/MessageContext';
@@ -68,14 +69,14 @@ const DashboardLayout = () => {
     setSelectedThread(null);
   };
 
-  const handleCreateChannel = (name: string, description: string, isPrivate: boolean) => {
+  const handleCreateChannel = (channel: { name: string; description: string; isPrivate: boolean }) => {
     const newChannel = {
       id: `channel-${Date.now()}`,
-      name,
-      description,
-      isPrivate,
+      name: channel.name,
+      description: channel.description,
+      isPrivate: channel.isPrivate,
       createdAt: new Date().toISOString(),
-      createdBy: user?.uid
+      createdBy: user?.id
     };
     addChannel(newChannel);
     setCurrentChannel(newChannel.id);
@@ -89,13 +90,11 @@ const DashboardLayout = () => {
     if (!targetId) return;
 
     const newMessage = {
-      id: `msg-${Date.now()}`,
-      content,
-      senderId: user.uid,
-      senderName: user.displayName,
-      senderAvatar: user.avatar,
-      timestamp: new Date().toISOString(),
       channelId: targetId,
+      userId: user.id,
+      username: user.displayName,
+      avatar: user.avatar,
+      content,
       type: currentView === 'dms' ? 'dm' : 'channel',
       files: files ? files.map(file => ({
         id: `file-${Date.now()}`,
@@ -106,7 +105,7 @@ const DashboardLayout = () => {
       })) : undefined
     };
 
-    addMessage(newMessage);
+    addMessage(targetId, newMessage);
   };
 
   const handleThreadSelect = (messageId: string) => {
@@ -159,8 +158,8 @@ const DashboardLayout = () => {
   };
 
   const currentMessages = currentView === 'dms' && selectedDM 
-    ? messages.filter(msg => msg.channelId === selectedDM && msg.type === 'dm')
-    : messages.filter(msg => msg.channelId === currentChannel && msg.type === 'channel');
+    ? (messages[selectedDM] || []).filter(msg => msg.channelId === selectedDM)
+    : (messages[currentChannel] || []).filter(msg => msg.channelId === currentChannel);
 
   const selectedChannel = channels.find(ch => ch.id === currentChannel);
 
@@ -198,10 +197,10 @@ const DashboardLayout = () => {
         ) : (
           <DMSidebar 
             user={user}
-            directMessages={directMessages}
-            selectedDM={selectedDM}
-            onDMSelect={setSelectedDM}
-            onCreateDM={() => setShowDMModal(true)}
+            workspace={workspace}
+            onUserSelect={setSelectedDM}
+            onBackClick={handleHomeClick}
+            selectedDM={selectedDM || ''}
           />
         )}
 
@@ -230,18 +229,15 @@ const DashboardLayout = () => {
                 if (!user) return;
                 
                 const newMessage = {
-                  id: `msg-${Date.now()}`,
-                  content,
-                  senderId: user.uid,
-                  senderName: user.displayName,
-                  senderAvatar: user.avatar,
-                  timestamp: new Date().toISOString(),
                   channelId: currentChannel,
-                  threadId: selectedThread,
-                  type: 'thread' as const
+                  userId: user.id,
+                  username: user.displayName,
+                  avatar: user.avatar,
+                  content,
+                  threadId: selectedThread
                 };
                 
-                addMessage(newMessage);
+                addMessage(currentChannel, newMessage);
               }}
             />
           )}
@@ -260,7 +256,7 @@ const DashboardLayout = () => {
             >
               <X className="w-5 h-5" />
             </Button>
-            <EnhancedAIChatbox user={user} />
+            <EnhancedAIChatbox />
           </div>
         </div>
       )}
@@ -275,6 +271,7 @@ const DashboardLayout = () => {
 
       {showInviteModal && (
         <InviteTeammatesModal
+          isOpen={showInviteModal}
           onClose={() => setShowInviteModal(false)}
         />
       )}
@@ -288,12 +285,17 @@ const DashboardLayout = () => {
 
       {showSearch && (
         <SearchModal
-          messages={messages}
           onClose={() => setShowSearch(false)}
           onMessageSelect={(messageId) => {
-            const message = messages.find(m => m.id === messageId);
-            if (message) {
-              setCurrentChannel(message.channelId);
+            // Find the message across all channels
+            let foundChannelId = '';
+            Object.keys(messages).forEach(channelId => {
+              if (messages[channelId].find(m => m.id === messageId)) {
+                foundChannelId = channelId;
+              }
+            });
+            if (foundChannelId) {
+              setCurrentChannel(foundChannelId);
               setSelectedThread(null);
               setShowSearch(false);
             }
@@ -303,7 +305,6 @@ const DashboardLayout = () => {
 
       {showSettings && (
         <WorkspaceSettings
-          workspace={workspace}
           onClose={() => setShowSettings(false)}
         />
       )}
