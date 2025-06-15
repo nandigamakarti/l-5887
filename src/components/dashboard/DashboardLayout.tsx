@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMessages } from '@/contexts/MessageContext';
 import NavigationSidebar from './NavigationSidebar';
+import Sidebar from './Sidebar';
 import ChatArea from './ChatArea';
 import ThreadSidebar from './ThreadSidebar';
 import EnhancedAIChatbox from './EnhancedAIChatbox';
@@ -171,7 +172,7 @@ const DashboardLayout = () => {
 
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-      {/* Main Navigation Sidebar - Single sidebar for everything */}
+      {/* Navigation Sidebar */}
       <NavigationSidebar 
         user={user}
         onHomeClick={handleHomeClick}
@@ -188,6 +189,28 @@ const DashboardLayout = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar */}
+        {currentView === 'channels' ? (
+          <Sidebar 
+            user={user}
+            workspace={workspace}
+            currentChannel={currentChannel}
+            channels={channels}
+            onChannelSelect={handleChannelSelect}
+            onCreateChannel={() => setShowCreateChannel(true)}
+            onInviteTeammates={() => setShowInviteModal(true)}
+            onLogout={handleLogout}
+          />
+        ) : (
+          <DMSidebar 
+            user={user}
+            workspace={workspace}
+            onUserSelect={setSelectedDM}
+            onBackClick={handleHomeClick}
+            selectedDM={selectedDM || ''}
+          />
+        )}
+
         {/* Chat Area */}
         <div className="flex-1 flex">
           <ChatArea 
