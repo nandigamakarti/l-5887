@@ -9,42 +9,23 @@ import {
   Brain,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
-  MessageCircle,
-  Star,
-  Zap,
-  Bell,
-  User
+  Sparkles
 } from 'lucide-react';
-import { User as UserType } from '@/contexts/AuthContext';
-import { UserAvatar } from '@/components/ui/user-avatar';
 
 interface NavigationSidebarProps {
-  user: UserType | null;
   onHomeClick: () => void;
   onDMClick: () => void;
   onSearchClick: () => void;
   onSettingsClick: () => void;
   onEnhancedAIClick: () => void;
-  onProfileClick: () => void;
-  onThreadsClick?: () => void;
-  onSavedItemsClick?: () => void;
-  onLaterClick?: () => void;
-  onNotificationsClick?: () => void;
 }
 
 const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
-  user,
   onHomeClick,
   onDMClick,
   onSearchClick,
   onSettingsClick,
   onEnhancedAIClick,
-  onProfileClick,
-  onThreadsClick,
-  onSavedItemsClick,
-  onLaterClick,
-  onNotificationsClick,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -60,30 +41,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       label: 'DMs',
       onClick: onDMClick,
       tooltip: 'Direct Messages'
-    },
-    {
-      icon: Bell,
-      label: 'Activity',
-      onClick: onNotificationsClick,
-      tooltip: 'Activity & Notifications'
-    },
-    {
-      icon: MessageCircle,
-      label: 'Threads',
-      onClick: onThreadsClick,
-      tooltip: 'Threads'
-    },
-    {
-      icon: Star,
-      label: 'Saved',
-      onClick: onSavedItemsClick,
-      tooltip: 'Saved Items'
-    },
-    {
-      icon: Zap,
-      label: 'Later',
-      onClick: onLaterClick,
-      tooltip: 'Later'
     },
     {
       icon: Search,
@@ -105,15 +62,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
       tooltip: 'Workspace Settings'
     }
   ];
-
-  const getPresenceColor = (presence: string) => {
-    switch (presence) {
-      case 'active': return 'bg-green-500';
-      case 'away': return 'bg-yellow-500';
-      case 'dnd': return 'bg-red-500';
-      default: return 'bg-gray-500';
-    }
-  };
 
   return (
     <div className={`h-full bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700/50 shadow-2xl transition-all duration-300 flex flex-col ${
@@ -174,42 +122,6 @@ const NavigationSidebar: React.FC<NavigationSidebarProps> = ({
             </div>
           );
         })}
-      </div>
-
-      {/* Profile Section */}
-      <div className="p-3 border-t border-slate-700/50">
-        <div className="relative group">
-          <Button
-            variant="ghost"
-            size={isCollapsed ? "icon" : "sm"}
-            onClick={onProfileClick}
-            className={`w-full h-12 transition-all duration-200 hover:bg-slate-700/50 hover:scale-105 ${
-              isCollapsed ? 'justify-center px-0' : 'justify-center lg:justify-start'
-            }`}
-            title={isCollapsed ? 'Profile' : undefined}
-          >
-            <div className="relative">
-              <UserAvatar 
-                name={user?.displayName || 'User'} 
-                size="sm"
-                className="ring-2 ring-slate-600 group-hover:ring-slate-500 transition-all duration-200"
-              />
-              <div className={`absolute -bottom-1 -right-1 w-3 h-3 ${getPresenceColor(user?.presence || 'offline')} rounded-full border-2 border-slate-800`}></div>
-            </div>
-            {!isCollapsed && (
-              <span className="ml-2 text-sm text-slate-300 hidden lg:block truncate">
-                {user?.displayName || 'Profile'}
-              </span>
-            )}
-          </Button>
-          
-          {/* Tooltip for collapsed state */}
-          {isCollapsed && (
-            <div className="absolute left-full ml-2 px-2 py-1 bg-slate-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200 whitespace-nowrap z-50 border border-slate-600">
-              Profile
-            </div>
-          )}
-        </div>
       </div>
 
       {/* Collapse Toggle Button */}
