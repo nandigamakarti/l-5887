@@ -61,8 +61,8 @@ const DashboardLayout = () => {
   const [selectedDM, setSelectedDM] = useState<string | null>(null);
 
   useEffect(() => {
-    initializeMockData(setMessages);
-  }, [setMessages]);
+    initializeMockData();
+  }, []);
 
   const handleChannelSelect = (channelId: string) => {
     setCurrentChannel(channelId);
@@ -96,6 +96,7 @@ const DashboardLayout = () => {
       avatar: user.avatar,
       content,
       type: currentView === 'dms' ? 'dm' : 'channel',
+      threadParticipants: [],
       files: files ? files.map(file => ({
         id: `file-${Date.now()}`,
         name: file.name,
@@ -163,6 +164,12 @@ const DashboardLayout = () => {
 
   const selectedChannel = channels.find(ch => ch.id === currentChannel);
 
+  // Create channel names map for AI
+  const channelNames = channels.reduce((acc, channel) => {
+    acc[channel.id] = channel.name;
+    return acc;
+  }, {} as { [channelId: string]: string });
+
   return (
     <div className="min-h-screen flex w-full bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Navigation Sidebar */}
@@ -208,8 +215,8 @@ const DashboardLayout = () => {
         <div className="flex-1 flex">
           <ChatArea 
             user={user}
-            channel={selectedChannel}
-            messages={currentMessages}
+            channel={currentView === 'dms' && selectedDM ? selectedDM : currentChannel}
+            channels={channels}
             onSendMessage={handleSendMessage}
             onThreadSelect={handleThreadSelect}
             onUpdateMessage={handleUpdateMessage}
@@ -220,26 +227,12 @@ const DashboardLayout = () => {
           
           {/* Thread Sidebar */}
           {selectedThread && (
-            <ThreadSidebar 
-              threadId={selectedThread}
-              messages={messages}
-              user={user}
-              onClose={() => setSelectedThread(null)}
-              onSendMessage={(content: string) => {
-                if (!user) return;
-                
-                const newMessage = {
-                  channelId: currentChannel,
-                  userId: user.id,
-                  username: user.displayName,
-                  avatar: user.avatar,
-                  content,
-                  threadId: selectedThread
-                };
-                
-                addMessage(currentChannel, newMessage);
-              }}
-            />
+            <div className="w-96 border-l border-gray-700">
+              <div className="p-4">
+                <h3>Thread</h3>
+                <button onClick={() => setSelectedThread(null)}>Close</button>
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -256,7 +249,11 @@ const DashboardLayout = () => {
             >
               <X className="w-5 h-5" />
             </Button>
-            <EnhancedAIChatbox />
+            <EnhancedAIChatbox 
+              isOpen={showAIChat}
+              onClose={() => setShowAIChat(false)}
+              channelNames={channelNames}
+            />
           </div>
         </div>
       )}
@@ -264,6 +261,7 @@ const DashboardLayout = () => {
       {/* Modals */}
       {showCreateChannel && (
         <CreateChannelModal
+          isOpen={showCreateChannel}
           onClose={() => setShowCreateChannel(false)}
           onCreateChannel={handleCreateChannel}
         />
@@ -285,35 +283,25 @@ const DashboardLayout = () => {
 
       {showSearch && (
         <SearchModal
+          isOpen={showSearch}
           onClose={() => setShowSearch(false)}
-          onMessageSelect={(messageId) => {
-            // Find the message across all channels
-            let foundChannelId = '';
-            Object.keys(messages).forEach(channelId => {
-              if (messages[channelId].find(m => m.id === messageId)) {
-                foundChannelId = channelId;
-              }
-            });
-            if (foundChannelId) {
-              setCurrentChannel(foundChannelId);
-              setSelectedThread(null);
-              setShowSearch(false);
-            }
-          }}
         />
       )}
 
       {showSettings && (
         <WorkspaceSettings
+          isOpen={showSettings}
           onClose={() => setShowSettings(false)}
         />
       )}
 
       {showDMModal && (
         <DirectMessageModal
+          isOpen={showDMModal}
           onClose={() => setShowDMModal(false)}
-          onCreateDM={(participants) => {
-            console.log('Creating DM with:', participants);
+          onUserSelect={(userId: string) => {
+            setSelectedDM(userId);
+            setCurrentView('dms');
             setShowDMModal(false);
           }}
         />
